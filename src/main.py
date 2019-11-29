@@ -2,13 +2,15 @@ import os
 import datetime
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+import numpy as np
 import zmq
+from zmq import Context, Socket
 
 import pygame
 import logging
 from rcsnail import RCSnail
 
-from src.pipeline.interceptor import Interceptor
+from src.pipeline.interceptor import Interceptor, send_array
 from src.utilities.configuration_manager import ConfigurationManager
 from src.utilities.pygame_utils import Car, PygameRenderer
 
@@ -20,13 +22,17 @@ def get_training_file_name(path_to_training):
     return date + "_test_" + str(int(len(files_from_same_date) / 2 + 1))
 
 
-def main(context: zmq.Context):
+def main(context: Context):
     username = os.getenv('RCS_USERNAME', '')
     password = os.getenv('RCS_PASSWORD', '')
     rcs = RCSnail()
     rcs.sign_in_with_email_and_password(username, password)
 
-    data_queue: zmq.Socket = sync_publisher(context)
+    data_queue: Socket = initialize_synced_pubs(context)
+
+    for i in range(10):
+        x = np.random.rand(3, 2)
+        send_array(queue=data_queue, data=x)
 
     return
     loop = asyncio.get_event_loop()
@@ -60,37 +66,30 @@ def main(context: zmq.Context):
         event_task.cancel()
         pygame.quit()
         asyncio.ensure_future(rcs.close_client_session())
-        #interceptor.close()
-        print("Shop closed.")
 
 
-def sync_publisher(context: zmq.Context):
-    publisher = context.socket(zmq.PUB)
-    publisher.sndhwm = 1100000
-    publisher.bind('tcp://*:5561')
+def initialize_synced_pubs(context: Context):
+    data_queue = context.socket(zmq.PUB)
+    data_queue.sndhwm = 1100000
+    data_queue.bind('tcp://*:5561')
 
     synchronizer = context.socket(zmq.REP)
     synchronizer.bind('tcp://*:5562')
 
     subscribers = 0
     while subscribers < 1:
-        publisher.send(b'')
-        msg = synchronizer.recv()
-        print(msg)
+        synchronizer.recv()
         synchronizer.send(b'')
         subscribers += 1
 
-    for i in range(10):
-        publisher.send(b'Beep')
-
     synchronizer.close()
-    return publisher
+    return data_queue
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
 
-    context = zmq.Context()
+    context = Context()
     main(context)
     context.destroy()
 

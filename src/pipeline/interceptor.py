@@ -3,6 +3,7 @@ from multiprocessing import Event
 
 from src.utilities.car_controls import CarControls, CarControlDiffs
 from src.utilities.message import Message
+import zmq
 from zmq import Socket
 
 
@@ -64,3 +65,10 @@ class Interceptor:
     def __send_data_to_model(self):
         if not self.kill_event.is_set():
             self.model_queue.put(Message("predicting", (self.frame, self.telemetry)))
+
+
+def send_array(queue, data, flags=0, copy=True, track=False):
+    """send a numpy array with metadata"""
+    metadata = dict(dtype=str(data.dtype), shape=data.shape, )
+    queue.send_json(metadata, flags | zmq.SNDMORE)
+    return queue.send(data, flags, copy=copy, track=track)
