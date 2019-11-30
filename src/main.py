@@ -1,3 +1,4 @@
+import json
 import os
 import datetime
 import asyncio
@@ -6,7 +7,7 @@ import numpy as np
 import zmq
 from zmq import Context, Socket
 
-from commons.common_zmq import send_array, initialize_synced_pubs
+from commons.common_zmq import send_array_with_json, initialize_synced_pubs, initialize_synced_sub
 from commons.configuration_manager import ConfigurationManager
 
 import pygame
@@ -36,7 +37,7 @@ def main(context: Context):
 
     for i in range(10):
         x = np.random.rand(3, 2)
-        send_array(queue=data_queue, data=x)
+        send_array_with_json(queue=data_queue, data=x, json_data=dict(stuff="jason", ))
 
     return
     loop = asyncio.get_event_loop()

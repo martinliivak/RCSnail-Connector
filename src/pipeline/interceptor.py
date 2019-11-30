@@ -1,6 +1,8 @@
 import numpy as np
 from multiprocessing import Event
 
+from commons.common_zmq import send_array_with_json
+
 from src.utilities.car_controls import CarControls, CarControlDiffs
 from src.utilities.message import Message
 from zmq import Socket
@@ -20,9 +22,6 @@ class Interceptor:
 
         self.runtime_training_enabled = configuration.runtime_training_enabled
         self.model_override_enabled = configuration.model_override_enabled
-
-        if self.runtime_training_enabled:
-            self.aggregation_count = 0
 
     def set_renderer(self, renderer):
         self.renderer = renderer
