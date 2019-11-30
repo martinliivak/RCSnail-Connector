@@ -6,12 +6,14 @@ import numpy as np
 import zmq
 from zmq import Context, Socket
 
+from commons.common_zmq import send_array, initialize_synced_pubs
+from commons.configuration_manager import ConfigurationManager
+
 import pygame
 import logging
 from rcsnail import RCSnail
 
-from src.pipeline.interceptor import Interceptor, send_array
-from src.utilities.configuration_manager import ConfigurationManager
+from src.pipeline.interceptor import Interceptor
 from src.utilities.pygame_utils import Car, PygameRenderer
 
 
@@ -23,12 +25,14 @@ def get_training_file_name(path_to_training):
 
 
 def main(context: Context):
-    username = os.getenv('RCS_USERNAME', '')
-    password = os.getenv('RCS_PASSWORD', '')
-    rcs = RCSnail()
-    rcs.sign_in_with_email_and_password(username, password)
+    config_manager = ConfigurationManager()
+    config = config_manager.config
 
-    data_queue: Socket = initialize_synced_pubs(context)
+    rcs = RCSnail()
+    rcs.sign_in_with_email_and_password(os.getenv('RCS_USERNAME', ''), os.getenv('RCS_PASSWORD', ''))
+
+    data_queue = context.socket(zmq.PUB)
+    initialize_synced_pubs(context, data_queue, config.data_queue_port)
 
     for i in range(10):
         x = np.random.rand(3, 2)
@@ -40,8 +44,6 @@ def main(context: Context):
 
     pygame.init()
     pygame.display.set_caption("RCSnail Connector")
-    config_manager = ConfigurationManager()
-    config = config_manager.config
 
     screen = pygame.display.set_mode((config.window_width, config.window_height))
     interceptor = Interceptor(config, data_queue)
@@ -66,24 +68,6 @@ def main(context: Context):
         event_task.cancel()
         pygame.quit()
         asyncio.ensure_future(rcs.close_client_session())
-
-
-def initialize_synced_pubs(context: Context):
-    data_queue = context.socket(zmq.PUB)
-    data_queue.sndhwm = 1100000
-    data_queue.bind('tcp://*:5561')
-
-    synchronizer = context.socket(zmq.REP)
-    synchronizer.bind('tcp://*:5562')
-
-    subscribers = 0
-    while subscribers < 1:
-        synchronizer.recv()
-        synchronizer.send(b'')
-        subscribers += 1
-
-    synchronizer.close()
-    return data_queue
 
 
 if __name__ == "__main__":
