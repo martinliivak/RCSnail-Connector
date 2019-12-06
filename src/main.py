@@ -2,7 +2,6 @@ import json
 import os
 import datetime
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 import zmq
 from zmq import Context, Socket
@@ -35,11 +34,10 @@ def main(context: Context):
     data_queue = context.socket(zmq.PUB)
     initialize_synced_pubs(context, data_queue, config.data_queue_port)
 
-    for i in range(10):
-        x = np.random.rand(3, 2)
-        send_array_with_json(queue=data_queue, data=x, json_data=dict(stuff="jason", ))
+    #for i in range(10):
+    #    x = np.random.rand(3, 2)
+    #    send_array_with_json(queue=data_queue, data=x, json_data=dict(stuff="jason", ))
 
-    return
     loop = asyncio.get_event_loop()
     pygame_event_queue = asyncio.Queue()
 
@@ -52,8 +50,7 @@ def main(context: Context):
     renderer = PygameRenderer(screen, car)
     interceptor.set_renderer(renderer)
 
-    executor = ThreadPoolExecutor(max_workers=32)
-    pygame_task = loop.run_in_executor(executor, renderer.pygame_event_loop, loop, pygame_event_queue)
+    pygame_task = loop.run_in_executor(None, renderer.pygame_event_loop, loop, pygame_event_queue)
     render_task = asyncio.ensure_future(renderer.render(rcs))
     event_task = asyncio.ensure_future(renderer.register_pygame_events(pygame_event_queue))
     queue_task = asyncio.ensure_future(rcs.enqueue(loop, interceptor.intercept_frame, interceptor.intercept_telemetry))

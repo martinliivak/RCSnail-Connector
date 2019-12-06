@@ -243,7 +243,6 @@ class PygameRenderer:
             telemetry_texture = self.font.render(telemetry_text, True, self.red)
             self.screen.blit(telemetry_texture, (3, self.window_height - 14))
 
-    # overlay is not the nicest but should be most performant way to display frame
     async def render(self, rcs):
         current_time = 0
         frame_size = (640, 480)

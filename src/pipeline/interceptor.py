@@ -1,26 +1,22 @@
 import numpy as np
-from multiprocessing import Event
 
 from commons.common_zmq import send_array_with_json
 
 from src.utilities.car_controls import CarControls, CarControlDiffs
-from src.utilities.message import Message
 from zmq import Socket
 
 
 class Interceptor:
     def __init__(self, configuration, data_queue: Socket):
-        self.kill_event = Event()
         self.renderer = None
         self.resolution = (configuration.recording_width, configuration.recording_height)
-        self.data_publisher = data_queue
+        self.data_queue = data_queue
 
         self.frame = None
         self.telemetry = None
         self.expert_updates = CarControlDiffs(0, 0.0, 0.0, 0.0)
         self.car_controls = CarControls(0, 0.0, 0.0, 0.0)
 
-        self.runtime_training_enabled = configuration.runtime_training_enabled
         self.model_override_enabled = configuration.model_override_enabled
 
     def set_renderer(self, renderer):
@@ -37,6 +33,7 @@ class Interceptor:
 
     def intercept_telemetry(self, telemetry):
         self.telemetry = telemetry
+        send_array_with_json(self.data_queue, self.frame, self.telemetry)
 
     async def car_update_override(self, car):
         try:
@@ -50,7 +47,6 @@ class Interceptor:
 
     def __update_car_from_predictions(self, car):
         try:
-            self.__send_data_to_model()
             predicted_updates = self.prediction_queue.get(block=True, timeout=1)
 
             if predicted_updates is not None:
@@ -59,7 +55,3 @@ class Interceptor:
                 car.ext_update_linear_movement(predicted_updates.d_throttle, predicted_updates.d_braking)
         except Exception as ex:
             print("Prediction exception: {}".format(ex))
-
-    def __send_data_to_model(self):
-        if not self.kill_event.is_set():
-            self.model_queue.put(Message("predicting", (self.frame, self.telemetry)))
