@@ -4,7 +4,7 @@ import datetime
 import asyncio
 import numpy as np
 import zmq
-from zmq import Context, Socket
+from zmq.asyncio import Context, Socket
 
 from commons.common_zmq import send_array_with_json, initialize_synced_pub, initialize_synced_sub
 from commons.configuration_manager import ConfigurationManager
@@ -31,15 +31,19 @@ def main(context: Context):
     rcs = RCSnail()
     rcs.sign_in_with_email_and_password(os.getenv('RCS_USERNAME', ''), os.getenv('RCS_PASSWORD', ''))
 
+    loop = asyncio.get_event_loop()
+
     data_queue = context.socket(zmq.PUB)
-    initialize_synced_pub(context, data_queue, config.data_queue_port)
+    loop.run_until_complete(initialize_synced_pub(context, data_queue, config.data_queue_port))
+
+    controls_queue = context.socket(zmq.SUB)
+    loop.run_until_complete(initialize_synced_sub(context, controls_queue, config.controls_queue_port))
 
     for i in range(10):
         x = np.random.rand(3, 2)
         send_array_with_json(queue=data_queue, data=x, json_data=dict(stuff="jason", ))
     return
 
-    loop = asyncio.get_event_loop()
     pygame_event_queue = asyncio.Queue()
 
     pygame.init()
