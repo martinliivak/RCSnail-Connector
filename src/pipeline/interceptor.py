@@ -7,10 +7,11 @@ from zmq import Socket
 
 
 class Interceptor:
-    def __init__(self, configuration, data_queue: Socket):
+    def __init__(self, configuration, data_queue: Socket, controls_queue: Socket):
         self.renderer = None
         self.resolution = (configuration.recording_width, configuration.recording_height)
         self.data_queue = data_queue
+        self.controls_queue = controls_queue
 
         self.frame = None
         self.telemetry = None
@@ -47,7 +48,7 @@ class Interceptor:
 
     def __update_car_from_predictions(self, car):
         try:
-            predicted_updates = self.prediction_queue.get(block=True, timeout=1)
+            predicted_updates = self.controls_queue.recv_json()
 
             if predicted_updates is not None:
                 car.gear = predicted_updates.d_gear

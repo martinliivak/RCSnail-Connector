@@ -2,6 +2,8 @@ import json
 import os
 import datetime
 import asyncio
+from concurrent.futures.thread import ThreadPoolExecutor
+
 import numpy as np
 import zmq
 from zmq.asyncio import Context, Socket
@@ -27,7 +29,6 @@ def get_training_file_name(path_to_training):
 def main(context: Context):
     config_manager = ConfigurationManager()
     config = config_manager.config
-
     rcs = RCSnail()
     rcs.sign_in_with_email_and_password(os.getenv('RCS_USERNAME', ''), os.getenv('RCS_PASSWORD', ''))
 
@@ -39,22 +40,18 @@ def main(context: Context):
     controls_queue = context.socket(zmq.SUB)
     loop.run_until_complete(initialize_synced_sub(context, controls_queue, config.controls_queue_port))
 
-    for i in range(10):
-        x = np.random.rand(3, 2)
-        send_array_with_json(queue=data_queue, data=x, json_data=dict(stuff="jason", ))
-    return
-
     pygame_event_queue = asyncio.Queue()
-
     pygame.init()
     pygame.display.set_caption("RCSnail Connector")
 
     screen = pygame.display.set_mode((config.window_width, config.window_height))
-    interceptor = Interceptor(config, data_queue)
+    interceptor = Interceptor(config, data_queue, controls_queue)
     car = Car(config, update_override=interceptor.car_update_override)
     renderer = PygameRenderer(screen, car)
     interceptor.set_renderer(renderer)
 
+#    executor = ThreadPoolExecutor()
+#    pygame_task = loop.run_in_executor(executor, renderer.pygame_event_loop, loop, pygame_event_queue)
     pygame_task = loop.run_in_executor(None, renderer.pygame_event_loop, loop, pygame_event_queue)
     render_task = asyncio.ensure_future(renderer.render(rcs))
     event_task = asyncio.ensure_future(renderer.register_pygame_events(pygame_event_queue))
@@ -79,4 +76,3 @@ if __name__ == "__main__":
     context = Context()
     main(context)
     context.destroy()
-
