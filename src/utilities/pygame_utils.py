@@ -1,4 +1,5 @@
 import asyncio
+import threading
 import time
 import pygame
 
@@ -243,7 +244,6 @@ class PygameRenderer:
             telemetry_texture = self.font.render(telemetry_text, True, self.red)
             self.screen.blit(telemetry_texture, (3, self.window_height - 14))
 
-    # overlay is not the nicest but should be most performant way to display frame
     async def render(self, rcs):
         current_time = 0
         frame_size = (640, 480)
@@ -257,20 +257,17 @@ class PygameRenderer:
             await rcs.updateControl(self.car.gear, self.car.steering, self.car.throttle, self.car.braking)
             self.screen.fill(self.black)
             if isinstance(self.latest_frame, VideoFrame):
-                self.render_new_frames_on_screen(frame_size)
+                image_to_ndarray = self.latest_frame.to_rgb().to_ndarray()
+                surface = pygame.surfarray.make_surface(image_to_ndarray.swapaxes(0, 1))
+                height = self.window_height - 10
+                width = height * self.latest_frame.width // self.latest_frame.height
+                x = (self.window_width - 20 - width) // 2
+                y = 0
+                scaled_frame = pygame.transform.scale(surface, (width, height))
+                self.screen.blit(scaled_frame, (x, y))
 
             self.draw()
             pygame.display.flip()
-
-    def render_new_frames_on_screen(self, frame_size):
-        image_to_ndarray = self.latest_frame.to_rgb().to_ndarray()
-        surface = pygame.surfarray.make_surface(image_to_ndarray.swapaxes(0, 1))
-        height = self.window_height - 10
-        width = height * self.latest_frame.width // self.latest_frame.height
-        x = (self.window_width - 20 - width) // 2
-        y = 0
-        scaled_frame = pygame.transform.scale(surface, (width, height))
-        self.screen.blit(scaled_frame, (x, y))
 
     def handle_new_frame(self, frame):
         self.latest_frame = frame
