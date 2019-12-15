@@ -1,8 +1,8 @@
 import numpy as np
+from commons.car_controls import CarControlDiffs, CarControls
 
 from commons.common_zmq import send_array_with_json
 
-from src.utilities.car_controls import CarControls, CarControlDiffs
 from zmq import Socket
 
 
@@ -34,25 +34,22 @@ class Interceptor:
 
     def intercept_telemetry(self, telemetry):
         self.telemetry = telemetry
+        # TODO send self.expert_updates alongside other data
         send_array_with_json(self.data_queue, self.frame, self.telemetry)
 
     async def car_update_override(self, car):
-        try:
-            self.expert_updates = CarControlDiffs(car.gear, car.d_steering, car.d_throttle, car.d_braking)
-            self.car_controls = CarControls(car.gear, car.steering, car.throttle, car.braking)
+        self.expert_updates = CarControlDiffs(car.gear, car.d_steering, car.d_throttle, car.d_braking)
 
-            if self.model_override_enabled and self.frame is not None and self.telemetry is not None:
-                self.__update_car_from_predictions(car)
-        except Exception as ex:
-            print("Override exception: {}".format(ex))
+        if self.model_override_enabled:
+            await self.__update_car_from_predictions(car)
 
-    def __update_car_from_predictions(self, car):
+    async def __update_car_from_predictions(self, car):
         try:
-            predicted_updates = self.controls_queue.recv_json()
+            predicted_updates = await self.controls_queue.recv_json()
 
             if predicted_updates is not None:
-                car.gear = predicted_updates.d_gear
-                car.ext_update_steering(predicted_updates.d_steering)
-                car.ext_update_linear_movement(predicted_updates.d_throttle, predicted_updates.d_braking)
+                car.gear = predicted_updates['d_gear']
+                car.ext_update_steering(predicted_updates['d_steering'])
+                car.ext_update_linear_movement(predicted_updates['d_throttle'], predicted_updates['d_braking'])
         except Exception as ex:
             print("Prediction exception: {}".format(ex))
