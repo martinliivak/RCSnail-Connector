@@ -15,10 +15,10 @@ class Interceptor:
 
         self.frame = None
         self.telemetry = None
-        self.expert_updates = CarControlDiffs(0, 0.0, 0.0, 0.0)
+        self.expert_updates = None
         self.car_controls = CarControls(0, 0.0, 0.0, 0.0)
 
-        self.model_override_enabled = configuration.model_override_enabled
+        self.expert_supervision_enabled = configuration.expert_supervision_enabled
 
     def set_renderer(self, renderer):
         self.renderer = renderer
@@ -34,14 +34,16 @@ class Interceptor:
 
     def intercept_telemetry(self, telemetry):
         self.telemetry = telemetry
-        # TODO send self.expert_updates alongside other data
-        send_array_with_json(self.data_queue, self.frame, self.telemetry)
 
     async def car_update_override(self, car):
         self.expert_updates = CarControlDiffs(car.gear, car.d_steering, car.d_throttle, car.d_braking)
 
-        if self.model_override_enabled:
-            await self.__update_car_from_predictions(car)
+        if self.expert_supervision_enabled:
+            send_array_with_json(self.data_queue, self.frame, (self.telemetry, self.expert_updates.to_dict()))
+        else:
+            send_array_with_json(self.data_queue, self.frame, self.telemetry)
+
+        await self.__update_car_from_predictions(car)
 
     async def __update_car_from_predictions(self, car):
         try:

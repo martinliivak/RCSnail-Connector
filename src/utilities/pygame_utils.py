@@ -44,12 +44,12 @@ class Car:
         self.__update_override = update_override
 
     async def update(self, dt):
-        self.__update_steering(dt)
-        self.__update_linear_movement(dt)
-        self.__update_direction()
-
         if self.__override_enabled:
             await self.__update_override(self)
+        else:
+            self.__update_steering(dt)
+            self.__update_linear_movement(dt)
+            self.__update_direction()
 
         # calculate virtual speed
         if self.up_down == self.down_down:
