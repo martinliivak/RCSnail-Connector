@@ -3,7 +3,7 @@ from commons.car_controls import CarControlDiffs, CarControls
 
 from commons.common_zmq import send_array_with_json
 
-from zmq import Socket
+from zmq.asyncio import Socket
 
 
 class Interceptor:
@@ -15,10 +15,10 @@ class Interceptor:
 
         self.frame = None
         self.telemetry = None
-        self.expert_updates = CarControlDiffs(0, 0.0, 0.0, 0.0)
+        self.expert_updates = None
         self.car_controls = CarControls(0, 0.0, 0.0, 0.0)
 
-        self.model_override_enabled = configuration.model_override_enabled
+        self.expert_supervision_enabled = configuration.expert_supervision_enabled
 
     def set_renderer(self, renderer):
         self.renderer = renderer
@@ -34,22 +34,33 @@ class Interceptor:
 
     def intercept_telemetry(self, telemetry):
         self.telemetry = telemetry
-        # TODO send self.expert_updates alongside other data
-        send_array_with_json(self.data_queue, self.frame, self.telemetry)
 
     async def car_update_override(self, car):
-        self.expert_updates = CarControlDiffs(car.gear, car.d_steering, car.d_throttle, car.d_braking)
+        try:
+            if self.frame is None or self.telemetry is None:
+                return
 
-        if self.model_override_enabled:
+            self.expert_updates = CarControlDiffs(car.gear, car.d_steering, car.d_throttle, car.d_braking)
+
+            if self.expert_supervision_enabled:
+                send_array_with_json(self.data_queue, self.frame, (self.telemetry, self.expert_updates.to_dict()))
+            else:
+                send_array_with_json(self.data_queue, self.frame, self.telemetry)
+
             await self.__update_car_from_predictions(car)
+        except Exception as ex:
+            print("Car override exception: {}".format(ex))
 
     async def __update_car_from_predictions(self, car):
         try:
-            predicted_updates = await self.controls_queue.recv_json()
+            prediction_ready = await self.controls_queue.poll(timeout=20)
 
-            if predicted_updates is not None:
-                car.gear = predicted_updates['d_gear']
-                car.ext_update_steering(predicted_updates['d_steering'])
-                car.ext_update_linear_movement(predicted_updates['d_throttle'], predicted_updates['d_braking'])
+            if prediction_ready:
+                predicted_updates = await self.controls_queue.recv_json()
+
+                if predicted_updates is not None:
+                    #car.gear = predicted_updates['d_gear']
+                    car.ext_update_steering(predicted_updates['d_steering'])
+                    #car.ext_update_linear_movement(predicted_updates['d_throttle'], predicted_updates['d_braking'])
         except Exception as ex:
             print("Prediction exception: {}".format(ex))

@@ -1,19 +1,16 @@
-import json
 import os
 import datetime
 import asyncio
 from concurrent.futures.thread import ThreadPoolExecutor
-
-import numpy as np
-import zmq
-from zmq.asyncio import Context, Socket
-
-from commons.common_zmq import send_array_with_json, initialize_synced_pub, initialize_synced_sub
-from commons.configuration_manager import ConfigurationManager
-
 import pygame
 import logging
+import zmq
+from zmq.asyncio import Context
+
 from rcsnail import RCSnail
+
+from commons.common_zmq import initialize_publisher, initialize_subscriber
+from commons.configuration_manager import ConfigurationManager
 
 from src.pipeline.interceptor import Interceptor
 from src.utilities.pygame_utils import Car, PygameRenderer
@@ -35,13 +32,14 @@ def main(context: Context):
     loop = asyncio.get_event_loop()
 
     data_queue = context.socket(zmq.PUB)
-    loop.run_until_complete(initialize_synced_pub(context, data_queue, config.data_queue_port))
+    loop.run_until_complete(initialize_publisher(data_queue, config.data_queue_port))
 
     controls_queue = context.socket(zmq.SUB)
-    loop.run_until_complete(initialize_synced_sub(context, controls_queue, config.controls_queue_port))
+    loop.run_until_complete(initialize_subscriber(controls_queue, config.controls_queue_port))
 
     pygame_event_queue = asyncio.Queue()
-    pygame.init()
+    pygame_executor = ThreadPoolExecutor(max_workers=1)
+    loop.run_in_executor(pygame_executor, pygame.init)
     pygame.display.set_caption("RCSnail Connector")
 
     screen = pygame.display.set_mode((config.window_width, config.window_height))
@@ -50,7 +48,7 @@ def main(context: Context):
     renderer = PygameRenderer(screen, car)
     interceptor.set_renderer(renderer)
 
-    pygame_task = loop.run_in_executor(None, renderer.pygame_event_loop, loop, pygame_event_queue)
+    pygame_task = loop.run_in_executor(pygame_executor, renderer.pygame_event_loop, loop, pygame_event_queue)
     render_task = asyncio.ensure_future(renderer.render(rcs))
     event_task = asyncio.ensure_future(renderer.register_pygame_events(pygame_event_queue))
     queue_task = asyncio.ensure_future(rcs.enqueue(loop, interceptor.intercept_frame, interceptor.intercept_telemetry))
