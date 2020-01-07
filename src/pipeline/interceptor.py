@@ -59,8 +59,8 @@ class Interceptor:
                 predicted_updates = await self.controls_queue.recv_json()
 
                 if predicted_updates is not None:
-                    #car.gear = predicted_updates['d_gear']
+                    car.gear = predicted_updates['d_gear']
                     car.ext_update_steering(predicted_updates['d_steering'])
-                    #car.ext_update_linear_movement(predicted_updates['d_throttle'], predicted_updates['d_braking'])
+                    car.ext_update_linear_movement(predicted_updates['d_throttle'], predicted_updates['d_braking'])
         except Exception as ex:
             print("Prediction exception: {}".format(ex))
