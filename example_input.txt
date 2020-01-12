@@ -1,1 +1,4 @@
-2019-04-12 18:59:18,764 data recv 35 {"p": 37, "c": 1555084758729, "g": 0, "s": -0.017380714416503906, "t": 0.0, "b": 0.0}
+[xcb] Unknown sequence number while processing queue
+[xcb] Most likely this is a multi-threaded client and XInitThreads has not been called
+[xcb] Aborting, sorry about that.
+python3.7: ../../src/xcb_io.c:259: poll_for_event: Assertion `!xcb_xlib_threads_sequence_lost' failed.

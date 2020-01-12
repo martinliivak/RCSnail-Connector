@@ -32,6 +32,7 @@ class Interceptor:
         return np.array(frame.to_image().resize(self.resolution)).astype(np.float32)
 
     def new_telemetry(self, telemetry):
+        print("telemetry: {}".format(telemetry))
         self.renderer.handle_new_telemetry(telemetry)
         self.telemetry = telemetry
 
@@ -59,6 +60,7 @@ class Interceptor:
                 predicted_updates = await self.controls_queue.recv_json()
 
                 if predicted_updates is not None:
+                    print("updates: {}".format(predicted_updates))
                     car.gear = predicted_updates['d_gear']
                     car.ext_update_steering(predicted_updates['d_steering'])
                     car.ext_update_linear_movement(predicted_updates['d_throttle'], predicted_updates['d_braking'])
