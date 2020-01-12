@@ -32,6 +32,7 @@ class Interceptor:
         return np.array(frame.to_image().resize(self.resolution)).astype(np.float32)
 
     def new_telemetry(self, telemetry):
+        self.renderer.handle_new_telemetry(telemetry)
         self.telemetry = telemetry
 
     async def car_update_override(self, car):
