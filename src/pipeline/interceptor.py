@@ -1,9 +1,8 @@
 import numpy as np
-from commons.car_controls import CarControlDiffs, CarControls
-
-from commons.common_zmq import send_array_with_json
-
 from zmq.asyncio import Socket
+
+from commons.car_controls import CarControlDiffs, CarControls
+from commons.common_zmq import send_array_with_json
 
 
 class Interceptor:
@@ -23,7 +22,7 @@ class Interceptor:
     def set_renderer(self, renderer):
         self.renderer = renderer
 
-    def intercept_frame(self, frame):
+    def new_frame(self, frame):
         self.renderer.handle_new_frame(frame)
 
         if frame is not None:
@@ -32,7 +31,7 @@ class Interceptor:
     def __convert_frame(self, frame):
         return np.array(frame.to_image().resize(self.resolution)).astype(np.float32)
 
-    def intercept_telemetry(self, telemetry):
+    def new_telemetry(self, telemetry):
         self.telemetry = telemetry
 
     async def car_update_override(self, car):
