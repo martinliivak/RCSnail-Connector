@@ -1,7 +1,7 @@
 import numpy as np
 from zmq.asyncio import Socket
 
-from commons.car_controls import CarControlDiffs, CarControls
+from commons.car_controls import CarControlUpdates, CarControls
 from commons.common_zmq import send_array_with_json
 
 
@@ -32,27 +32,27 @@ class Interceptor:
         return np.array(frame.to_image().resize(self.resolution)).astype(np.float32)
 
     def new_telemetry(self, telemetry):
-        print("telemetry: {}".format(telemetry))
+        #print("telemetry: {}".format(telemetry))
         self.renderer.handle_new_telemetry(telemetry)
         self.telemetry = telemetry
 
-    async def car_update_override(self, car):
+    async def car_update_override(self, car, dt):
         try:
             if self.frame is None or self.telemetry is None:
                 return
 
-            self.expert_updates = CarControlDiffs(car.gear, car.d_steering, car.d_throttle, car.d_braking)
+            self.expert_updates = CarControlUpdates(car.gear, car.d_steering, car.d_throttle, car.d_braking, True)
 
             if self.expert_supervision_enabled:
                 send_array_with_json(self.data_queue, self.frame, (self.telemetry, self.expert_updates.to_dict()))
             else:
                 send_array_with_json(self.data_queue, self.frame, self.telemetry)
 
-            await self.__update_car_from_predictions(car)
+            await self.__update_car_from_predictions(car, dt)
         except Exception as ex:
             print("Car override exception: {}".format(ex))
 
-    async def __update_car_from_predictions(self, car):
+    async def __update_car_from_predictions(self, car, dt):
         try:
             prediction_ready = await self.controls_queue.poll(timeout=20)
 
@@ -60,9 +60,8 @@ class Interceptor:
                 predicted_updates = await self.controls_queue.recv_json()
 
                 if predicted_updates is not None:
-                    print("updates: {}".format(predicted_updates))
-                    car.gear = predicted_updates['d_gear']
+                    #print("updates: {}".format(predicted_updates))
                     car.ext_update_steering(predicted_updates['d_steering'])
-                    car.ext_update_linear_movement(predicted_updates['d_throttle'], predicted_updates['d_braking'])
+                    car.ext_update_linear_movement(predicted_updates, dt)
         except Exception as ex:
             print("Prediction exception: {}".format(ex))
