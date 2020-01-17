@@ -1,15 +1,14 @@
 import numpy as np
-from commons.car_controls import CarControlDiffs, CarControls
-
-from commons.common_zmq import send_array_with_json
-
 from zmq.asyncio import Socket
+
+from commons.car_controls import CarControlUpdates, CarControls
+from commons.common_zmq import send_array_with_json
 
 
 class Interceptor:
-    def __init__(self, configuration, data_queue: Socket, controls_queue: Socket):
+    def __init__(self, config, data_queue: Socket, controls_queue: Socket):
         self.renderer = None
-        self.resolution = (configuration.recording_width, configuration.recording_height)
+        self.resolution = (config.frame_width, config.frame_height)
         self.data_queue = data_queue
         self.controls_queue = controls_queue
 
@@ -18,12 +17,12 @@ class Interceptor:
         self.expert_updates = None
         self.car_controls = CarControls(0, 0.0, 0.0, 0.0)
 
-        self.expert_supervision_enabled = configuration.expert_supervision_enabled
+        self.expert_supervision_enabled = config.expert_supervision_enabled
 
     def set_renderer(self, renderer):
         self.renderer = renderer
 
-    def intercept_frame(self, frame):
+    def new_frame(self, frame):
         self.renderer.handle_new_frame(frame)
 
         if frame is not None:
@@ -32,26 +31,27 @@ class Interceptor:
     def __convert_frame(self, frame):
         return np.array(frame.to_image().resize(self.resolution)).astype(np.float32)
 
-    def intercept_telemetry(self, telemetry):
+    def new_telemetry(self, telemetry):
+        self.renderer.handle_new_telemetry(telemetry)
         self.telemetry = telemetry
 
-    async def car_update_override(self, car):
+    async def car_update_override(self, car, dt):
         try:
             if self.frame is None or self.telemetry is None:
                 return
 
-            self.expert_updates = CarControlDiffs(car.gear, car.d_steering, car.d_throttle, car.d_braking)
+            self.expert_updates = CarControlUpdates(car.gear, car.d_steering, car.d_throttle, car.d_braking, True)
 
             if self.expert_supervision_enabled:
                 send_array_with_json(self.data_queue, self.frame, (self.telemetry, self.expert_updates.to_dict()))
             else:
                 send_array_with_json(self.data_queue, self.frame, self.telemetry)
 
-            await self.__update_car_from_predictions(car)
+            await self.__update_car_from_predictions(car, dt)
         except Exception as ex:
             print("Car override exception: {}".format(ex))
 
-    async def __update_car_from_predictions(self, car):
+    async def __update_car_from_predictions(self, car, dt):
         try:
             prediction_ready = await self.controls_queue.poll(timeout=20)
 
@@ -59,8 +59,8 @@ class Interceptor:
                 predicted_updates = await self.controls_queue.recv_json()
 
                 if predicted_updates is not None:
-                    #car.gear = predicted_updates['d_gear']
+                    #print("updates: {}".format(predicted_updates))
                     car.ext_update_steering(predicted_updates['d_steering'])
-                    #car.ext_update_linear_movement(predicted_updates['d_throttle'], predicted_updates['d_braking'])
+                    car.ext_update_linear_movement(predicted_updates, dt)
         except Exception as ex:
             print("Prediction exception: {}".format(ex))

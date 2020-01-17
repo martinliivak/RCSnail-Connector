@@ -51,7 +51,7 @@ def main(context: Context):
     pygame_task = loop.run_in_executor(pygame_executor, renderer.pygame_event_loop, loop, pygame_event_queue)
     render_task = asyncio.ensure_future(renderer.render(rcs))
     event_task = asyncio.ensure_future(renderer.register_pygame_events(pygame_event_queue))
-    queue_task = asyncio.ensure_future(rcs.enqueue(loop, interceptor.intercept_frame, interceptor.intercept_telemetry))
+    queue_task = asyncio.ensure_future(rcs.enqueue(loop, interceptor.new_frame, interceptor.new_telemetry, track=config.track))
 
     try:
         loop.run_forever()
