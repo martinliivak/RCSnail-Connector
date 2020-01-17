@@ -6,9 +6,9 @@ from commons.common_zmq import send_array_with_json
 
 
 class Interceptor:
-    def __init__(self, configuration, data_queue: Socket, controls_queue: Socket):
+    def __init__(self, config, data_queue: Socket, controls_queue: Socket):
         self.renderer = None
-        self.resolution = (configuration.recording_width, configuration.recording_height)
+        self.resolution = (config.frame_width, config.frame_height)
         self.data_queue = data_queue
         self.controls_queue = controls_queue
 
@@ -17,7 +17,7 @@ class Interceptor:
         self.expert_updates = None
         self.car_controls = CarControls(0, 0.0, 0.0, 0.0)
 
-        self.expert_supervision_enabled = configuration.expert_supervision_enabled
+        self.expert_supervision_enabled = config.expert_supervision_enabled
 
     def set_renderer(self, renderer):
         self.renderer = renderer
@@ -32,7 +32,6 @@ class Interceptor:
         return np.array(frame.to_image().resize(self.resolution)).astype(np.float32)
 
     def new_telemetry(self, telemetry):
-        #print("telemetry: {}".format(telemetry))
         self.renderer.handle_new_telemetry(telemetry)
         self.telemetry = telemetry
 

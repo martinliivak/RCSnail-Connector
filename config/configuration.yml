@@ -1,8 +1,8 @@
 # RCSnail properties
 window_width: 960
 window_height: 480
-recording_width: 60
-recording_height: 40
+frame_width: 180
+frame_height: 120
 track: private
 # ZMQ properties
 data_queue_port: 5551
