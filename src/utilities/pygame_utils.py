@@ -141,8 +141,8 @@ class Car:
             self.__update_direction(False)
         else:
             self.gear = predict_dict['d_gear']
-            self.throttle = min(self.max_throttle, self.throttle + dt * predict_dict['d_throttle'])
-            self.braking = min(self.max_braking, self.braking + dt * predict_dict['d_braking'])
+            self.throttle = min(self.max_throttle, self.throttle + predict_dict['d_throttle'])
+            self.braking = min(self.max_braking, self.braking + predict_dict['d_braking'])
 
     def ext_update_steering(self, d_steering):
         if d_steering < 0:
