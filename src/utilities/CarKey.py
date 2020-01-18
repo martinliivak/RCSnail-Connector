@@ -38,7 +38,7 @@ class CarKey:
 
     async def update(self, dt):
         try:
-            self.__update_steering(dt)
+            self.__update_steering(dt, self.__override_enabled)
             self.__update_linear_movement(dt, self.__override_enabled)
             self.__update_direction(self.__override_enabled)
 
@@ -56,47 +56,47 @@ class CarKey:
         except Exception as ex:
             print("Car update exception: {}".format(ex))
 
-    def __update_steering(self, dt):
+    def __update_steering(self, dt, override_enabled: bool):
         # calculate steering
         if (not self.left_down) and (not self.right_down):
-            self.__passive_steering(dt)
+            self.__passive_steering(dt, override_enabled)
         elif self.left_down and not self.right_down:
             self.d_steering = -dt * self.steering_speed
-            if not self.__override_enabled:
+            if not override_enabled:
                 self.steering = max(-1.0, self.steering + self.d_steering)
         elif not self.left_down and self.right_down:
             self.d_steering = dt * self.steering_speed
-            if not self.__override_enabled:
+            if not override_enabled:
                 self.steering = min(1.0, self.steering + self.d_steering)
 
-    def __passive_steering(self, dt):
+    def __passive_steering(self, dt, override_enabled: bool):
         if self.steering > 0.01:
             self.d_steering = -dt * self.steering_dissipation_speed
-            if not self.__override_enabled:
+            if not override_enabled:
                 self.steering = max(0.0, self.steering + self.d_steering)
         elif self.steering < -0.01:
             self.d_steering = dt * self.steering_dissipation_speed
-            if not self.__override_enabled:
+            if not override_enabled:
                 self.steering = min(0.0, self.steering + self.d_steering)
         else:
             self.d_steering = 0.0
 
-    def __update_linear_movement(self, dt, is_override: bool):
+    def __update_linear_movement(self, dt, override_enabled: bool):
         # calculating gear, throttle, braking
         if self.up_down and not self.down_down:
             if self.gear == 0:
-                self.__takeoff(dt, 1, is_override)
+                self.__takeoff(dt, 1, override_enabled)
             elif self.gear == 1:  # drive accelerating
-                self.__accelerate(dt, is_override)
+                self.__accelerate(dt, override_enabled)
             elif self.gear == -1:  # reverse braking
-                self.__decelerate(dt, is_override)
+                self.__decelerate(dt, override_enabled)
         elif not self.up_down and self.down_down:
             if self.gear == 0:
-                self.__takeoff(dt, -1, is_override)
+                self.__takeoff(dt, -1, override_enabled)
             elif self.gear == 1:  # drive braking
-                self.__decelerate(dt, is_override)
+                self.__decelerate(dt, override_enabled)
             elif self.gear == -1:  # reverse accelerating
-                self.__accelerate(dt, is_override)
+                self.__accelerate(dt, override_enabled)
         else:  # both down or both up
             self.d_throttle = -dt * self.dissipation_speed
             self.d_braking = -dt * self.dissipation_speed
@@ -104,43 +104,45 @@ class CarKey:
                 self.throttle = max(0.0, self.throttle + self.d_throttle)
                 self.braking = max(0.0, self.braking + self.d_braking)
 
-    def __takeoff(self, dt, gear, is_override: bool):
+    def __takeoff(self, dt, gear, override_enabled: bool):
         self.d_throttle = dt * self.acceleration_speed
         self.d_braking = max(-self.braking, -dt * self.braking_speed)
-        if not is_override:
+        if not override_enabled:
             self.gear = gear
             self.throttle = 0.0
             self.braking = max(0.0, self.braking + self.d_braking)
 
-    def __decelerate(self, dt, is_override: bool):
+    def __decelerate(self, dt, override_enabled: bool):
         self.d_throttle = 0.0
         self.d_braking = dt * self.braking_speed
-        if not is_override:
+        if not override_enabled:
             self.throttle = 0.0
             self.braking = min(self.max_braking, self.braking + self.d_braking)
 
-    def __accelerate(self, dt, is_override: bool):
+    def __accelerate(self, dt, override_enabled: bool):
         self.d_throttle = dt * self.acceleration_speed
         self.d_braking = max(-self.braking, -dt * self.braking_speed)
-        if not is_override:
+        if not override_enabled:
             self.throttle = min(self.max_throttle, self.throttle + self.d_throttle)
             self.braking = max(0.0, self.braking + self.d_braking)
 
-    def __update_direction(self, is_override: bool):
+    def __update_direction(self, override_enabled: bool):
         # conditions to change the direction
-        if not self.up_down and not self.down_down and self.virtual_speed < 0.01 and not is_override:
+        if not self.up_down and not self.down_down and self.virtual_speed < 0.01 and not override_enabled:
             self.gear = 0
 
-    def ext_update_linear_movement(self, predict_dict, dt):
+    def ext_update(self, predict_dict, dt):
         if predict_dict['supervisor']:
             self.__update_linear_movement(dt, False)
             self.__update_direction(False)
+            self.__ext_update_steering(predict_dict['d_steering'])
         else:
             self.gear = predict_dict['d_gear']
             self.throttle = min(self.max_throttle, self.throttle + predict_dict['d_throttle'])
             self.braking = min(self.max_braking, self.braking + predict_dict['d_braking'])
+            self.__ext_update_steering(predict_dict['d_steering'])
 
-    def ext_update_steering(self, d_steering):
+    def __ext_update_steering(self, d_steering):
         if d_steering < 0:
             self.steering = max(-1.0, self.steering + d_steering)
         else:

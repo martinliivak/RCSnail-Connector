@@ -28,23 +28,24 @@ class CarJoy:
             self.__update_linear_movement(linear_command, self.__override_enabled)
 
             if self.__override_enabled:
-                await self.__update_override(self)
+                await self.__update_override(self, (steering_command, linear_command))
         except Exception as ex:
             print("Car update exception: {}".format(ex))
 
     def __update_steering(self, steering_command, control_override: bool):
-        self.d_steering = steering_command - self.steering
+        self.d_steering = steering_command - self.steering_command
+        self.steering_command = steering_command
 
         if not control_override:
-            if steering_command < 0:
-                self.steering = max(-1.0, steering_command)
-            else:
-                self.steering = min(1.0, steering_command)
+            if self.d_steering < 0.0:
+                self.steering = max(-1.0, self.steering + self.d_steering)
+            elif self.d_steering > 0.0:
+                self.steering = min(1.0, self.steering + self.d_steering)
 
     def __update_linear_movement(self, linear_command, control_override: bool):
         self.d_linear = linear_command - self.linear_command
 
-        if self.linear_command <= 0.0 <= linear_command or self.linear_command >= 0.0 >= linear_command:
+        if (self.linear_command <= 0.0 <= linear_command or self.linear_command >= 0.0 >= linear_command) and not control_override:
             self.gear = 0
         self.linear_command = linear_command
 
@@ -64,7 +65,6 @@ class CarJoy:
                 self.__accelerate(control_override)
             elif self.gear == 1:
                 self.__decelerate(control_override)
-        #print("{}\t{}".format(self.d_throttle, self.linear_command))
 
     def __takeoff(self, gear, control_override: bool):
         self.d_throttle = self.d_linear * self.gear
@@ -82,16 +82,18 @@ class CarJoy:
         if not control_override:
             self.throttle = max(0.0, self.throttle + self.d_throttle)
 
-    def ext_update_linear(self, predict_dict):
+    def ext_update(self, predict_dict, commands):
+        steering_command, linear_command = commands
+
         if predict_dict['supervisor']:
-            self.__update_linear_movement(self.linear_command, False)
+            self.__update_linear_movement(linear_command, False)
+            self.__update_steering(steering_command, False)
         else:
             self.gear = predict_dict['d_gear']
             self.throttle = min(1.0, self.throttle + predict_dict['d_throttle'])
             self.braking = min(1.0, self.braking + predict_dict['d_braking'])
 
-    def ext_update_steering(self, d_steering):
-        if d_steering < 0:
-            self.steering = max(-1.0, self.steering + d_steering)
-        else:
-            self.steering = min(1.0, self.steering + d_steering)
+            if predict_dict['d_steering'] < 0:
+                self.steering = max(-1.0, self.steering + predict_dict['d_steering'])
+            else:
+                self.steering = min(1.0, self.steering + predict_dict['d_steering'])

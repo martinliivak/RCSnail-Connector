@@ -47,8 +47,8 @@ def main(context: Context):
 
     screen = pygame.display.set_mode((config.window_width, config.window_height))
     interceptor = Interceptor(config, data_queue, controls_queue)
-    car = CarJoy(config, update_override=interceptor.car_update_override)
-    renderer = RendererJoy(screen, car)
+    car = CarKey(config, update_override=interceptor.car_update_override)
+    renderer = RendererKey(screen, car)
     loop.run_in_executor(pygame_executor, renderer.init_controllers)
     interceptor.set_renderer(renderer)
 
