@@ -133,17 +133,16 @@ class CarKey:
 
     def ext_update(self, predict_dict, dt):
         if predict_dict['supervisor']:
+            # TODO maybe solve double diff updates
             self.__update_linear_movement(dt, False)
             self.__update_direction(False)
-            self.__ext_update_steering(predict_dict['d_steering'])
+            self.__update_steering(dt, False)
         else:
             self.gear = predict_dict['d_gear']
             self.throttle = min(self.max_throttle, self.throttle + predict_dict['d_throttle'])
             self.braking = min(self.max_braking, self.braking + predict_dict['d_braking'])
-            self.__ext_update_steering(predict_dict['d_steering'])
 
-    def __ext_update_steering(self, d_steering):
-        if d_steering < 0:
-            self.steering = max(-1.0, self.steering + d_steering)
-        else:
-            self.steering = min(1.0, self.steering + d_steering)
+            if predict_dict['d_steering'] < 0:
+                self.steering = max(-1.0, self.steering + predict_dict['d_steering'])
+            else:
+                self.steering = min(1.0, self.steering + predict_dict['d_steering'])
