@@ -34,9 +34,10 @@ class CarJoy:
 
     def __update_steering(self, steering_command, control_override: bool):
         self.d_steering = steering_command - self.steering_command
-        self.steering_command = steering_command
 
         if not control_override:
+            self.steering_command = steering_command
+
             if self.d_steering < 0.0:
                 self.steering = max(-1.0, self.steering + self.d_steering)
             elif self.d_steering > 0.0:
@@ -45,9 +46,11 @@ class CarJoy:
     def __update_linear_movement(self, linear_command, control_override: bool):
         self.d_linear = linear_command - self.linear_command
 
-        if (self.linear_command <= 0.0 <= linear_command or self.linear_command >= 0.0 >= linear_command) and not control_override:
-            self.gear = 0
-        self.linear_command = linear_command
+        if not control_override:
+            if self.linear_command <= 0.0 <= linear_command or self.linear_command >= 0.0 >= linear_command:
+                self.gear = 0
+
+            self.linear_command = linear_command
 
         if self.d_linear == 0.0:
             self.d_throttle = 0.0
@@ -90,8 +93,11 @@ class CarJoy:
             self.__update_steering(steering_command, False)
         else:
             self.gear = predict_dict['d_gear']
-            self.throttle = min(1.0, self.throttle + predict_dict['d_throttle'])
-            self.braking = min(1.0, self.braking + predict_dict['d_braking'])
+
+            if predict_dict['d_throttle'] < 0:
+                self.throttle = max(0.0, self.throttle + predict_dict['d_throttle'])
+            else:
+                self.throttle = min(1.0, self.throttle + predict_dict['d_throttle'])
 
             if predict_dict['d_steering'] < 0:
                 self.steering = max(-1.0, self.steering + predict_dict['d_steering'])
