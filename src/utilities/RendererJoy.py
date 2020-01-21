@@ -40,16 +40,6 @@ class RendererJoy:
             if event.type == pygame.QUIT:
                 print("event", event)
                 break
-#            elif event.type == pygame.JOYAXISMOTION:
-#                if event.axis == self.steering_axis:
-#                    steering = self.controller.get_axis(self.steering_axis)
-#                    print("steering: {}".format(steering))
-#                    # todo update steering
-#                if event.axis == self.throttle_axis:
-#                    throttle = -1.0 * self.controller.get_axis(self.throttle_axis)
-#                    print("throttle: {}".format(throttle))
-#                    # todo update throttle
-
         asyncio.get_event_loop().stop()
 
     def draw(self):
@@ -103,7 +93,9 @@ class RendererJoy:
                 await asyncio.sleep(1 / self.FPS - (current_time - last_time))  # tick
 
                 steering = self.controller.get_axis(self.steering_axis)
+                # Throttle axis is inverted so the physical layout makes more sense
                 throttle = -1.0 * self.controller.get_axis(self.throttle_axis)
+
                 await self.car.update(steering, throttle)
                 await rcs.updateControl(self.car.gear, self.car.steering, self.car.throttle, self.car.braking)
                 self.screen.fill(self.black)
@@ -126,5 +118,5 @@ class RendererJoy:
         self.latest_frame = frame
 
     def handle_new_telemetry(self, telemetry):
-        if self.car:
+        if self.car is not None:
             self.car.batVoltage_mV = telemetry["b"]

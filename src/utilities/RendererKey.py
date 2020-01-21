@@ -136,5 +136,5 @@ class RendererKey:
         self.latest_frame = frame
 
     def handle_new_telemetry(self, telemetry):
-        if self.car:
+        if self.car is not None:
             self.car.batVoltage_mV = telemetry["b"]

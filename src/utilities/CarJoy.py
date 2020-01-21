@@ -103,3 +103,6 @@ class CarJoy:
                 self.steering = max(-1.0, self.steering + predict_dict['d_steering'])
             else:
                 self.steering = min(1.0, self.steering + predict_dict['d_steering'])
+
+            self.linear_command = linear_command
+            self.steering_command = steering_command
