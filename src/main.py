@@ -13,10 +13,10 @@ from commons.common_zmq import initialize_publisher, initialize_subscriber
 from commons.configuration_manager import ConfigurationManager
 
 from src.pipeline.interceptor import Interceptor
-from src.utilities.CarJoy import CarJoy
-from src.utilities.CarKey import CarKey
-from src.utilities.RendererJoy import RendererJoy
-from src.utilities.RendererKey import RendererKey
+from src.utilities.JoystickCar import CarJoy
+from src.utilities.KeyboardCar import CarKey
+from src.utilities.JoystickRenderer import RendererJoy
+from src.utilities.KeyboardRenderer import RendererKey
 
 
 def get_training_file_name(path_to_training):

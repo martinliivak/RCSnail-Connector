@@ -3,11 +3,11 @@ import time
 import pygame
 from av import VideoFrame
 
-from src.utilities import CarKey
+from src.utilities import KeyboardCar
 
 
 class RendererKey:
-    def __init__(self, screen, car: CarKey):
+    def __init__(self, screen, car: KeyboardCar):
         self.window_width = 960
         self.window_height = 480
         self.FPS = 30
