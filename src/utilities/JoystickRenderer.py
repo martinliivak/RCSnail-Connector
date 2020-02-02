@@ -40,6 +40,9 @@ class RendererJoy:
             if event.type == pygame.QUIT:
                 print("event", event)
                 break
+            elif event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
+                if event.key == pygame.K_ESCAPE:
+                    break
         asyncio.get_event_loop().stop()
 
     def draw(self):

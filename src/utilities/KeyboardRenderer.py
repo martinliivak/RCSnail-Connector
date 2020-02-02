@@ -37,7 +37,9 @@ class RendererKey:
                 print("event", event)
                 break
             elif event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
-                if event.key == pygame.K_LEFT:
+                if event.key == pygame.K_ESCAPE:
+                    break
+                elif event.key == pygame.K_LEFT:
                     self.car.left_down = event.type == pygame.KEYDOWN
                 elif event.key == pygame.K_RIGHT:
                     self.car.right_down = event.type == pygame.KEYDOWN
