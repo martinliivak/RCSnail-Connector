@@ -13,7 +13,10 @@ from commons.common_zmq import initialize_publisher, initialize_subscriber
 from commons.configuration_manager import ConfigurationManager
 
 from src.pipeline.interceptor import Interceptor
-from src.utilities.pygame_utils import Car, PygameRenderer
+from src.utilities.JoystickCar import CarJoy
+from src.utilities.KeyboardCar import CarKey
+from src.utilities.JoystickRenderer import RendererJoy
+from src.utilities.KeyboardRenderer import RendererKey
 
 
 def get_training_file_name(path_to_training):
@@ -44,8 +47,9 @@ def main(context: Context):
 
     screen = pygame.display.set_mode((config.window_width, config.window_height))
     interceptor = Interceptor(config, data_queue, controls_queue)
-    car = Car(config, update_override=interceptor.car_update_override)
-    renderer = PygameRenderer(screen, car)
+    car = CarJoy(config, update_override=interceptor.car_update_override)
+    renderer = RendererJoy(screen, car)
+    loop.run_in_executor(pygame_executor, renderer.init_controllers)
     interceptor.set_renderer(renderer)
 
     pygame_task = loop.run_in_executor(pygame_executor, renderer.pygame_event_loop, loop, pygame_event_queue)

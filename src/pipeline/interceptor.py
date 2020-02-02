@@ -35,7 +35,7 @@ class Interceptor:
         self.renderer.handle_new_telemetry(telemetry)
         self.telemetry = telemetry
 
-    async def car_update_override(self, car, dt):
+    async def car_update_override(self, car, commands):
         try:
             if self.frame is None or self.telemetry is None:
                 return
@@ -47,11 +47,11 @@ class Interceptor:
             else:
                 send_array_with_json(self.data_queue, self.frame, self.telemetry)
 
-            await self.__update_car_from_predictions(car, dt)
+            await self.__update_car_from_predictions(car, commands)
         except Exception as ex:
             print("Car override exception: {}".format(ex))
 
-    async def __update_car_from_predictions(self, car, dt):
+    async def __update_car_from_predictions(self, car, commands):
         try:
             prediction_ready = await self.controls_queue.poll(timeout=20)
 
@@ -60,7 +60,6 @@ class Interceptor:
 
                 if predicted_updates is not None:
                     #print("updates: {}".format(predicted_updates))
-                    car.ext_update_steering(predicted_updates['d_steering'])
-                    car.ext_update_linear_movement(predicted_updates, dt)
+                    car.ext_update(predicted_updates, commands)
         except Exception as ex:
             print("Prediction exception: {}".format(ex))
