@@ -87,17 +87,22 @@ class CarJoy:
             self.throttle = min(1.0, self.throttle + self.d_throttle)
 
     def __decelerate(self, control_override: bool):
-        self.d_throttle = -1 * np.abs(self.d_linear)
+        self.d_throttle = -1.0 * np.abs(self.d_linear)
         if not control_override:
             self.throttle = max(0.0, self.throttle + self.d_throttle)
 
     def ext_update(self, predict_dict, commands):
         steering_command, linear_command = commands
 
-        if 'supervisor' in predict_dict and predict_dict['supervisor']:
+        if predict_dict['update_mode'] == 'supervisor':
             self.__update_gear(linear_command, False)
             self.__update_linear_movement(False)
             self.__update_steering(steering_command, False)
+        elif predict_dict['update_mode'] == 'steer':
+            self.__update_gear(linear_command, False)
+            self.__update_linear_movement(False)
+            self.__update_steering(steering_command, True)
+            self.steering = np.clip(predict_dict['d_steering'], -1.0, 1.0)
         else:
             self.gear = predict_dict['d_gear']
 

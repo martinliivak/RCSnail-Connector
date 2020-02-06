@@ -15,7 +15,6 @@ class Interceptor:
         self.frame = None
         self.telemetry = None
         self.expert_updates = None
-        self.car_controls = CarControls(0, 0.0, 0.0, 0.0)
 
         self.expert_supervision_enabled = config.expert_supervision_enabled
 
@@ -40,7 +39,8 @@ class Interceptor:
             if self.frame is None or self.telemetry is None:
                 return
 
-            self.expert_updates = CarControlUpdates(car.gear, car.d_steering, car.d_throttle, car.d_braking, True)
+            # TODO this may have to send out (full state + diffs)
+            self.expert_updates = CarControlUpdates(car.gear, car.d_steering, car.d_throttle, car.d_braking, 'supervisor')
 
             if self.expert_supervision_enabled:
                 send_array_with_json(self.data_queue, self.frame, (self.telemetry, self.expert_updates.to_dict()))
