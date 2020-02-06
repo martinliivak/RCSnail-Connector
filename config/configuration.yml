@@ -8,5 +8,5 @@ track: private
 data_queue_port: 5551
 controls_queue_port: 5552
 # Procedural flags
-model_override_enabled: true
+model_override_enabled: false
 expert_supervision_enabled: true

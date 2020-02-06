@@ -25,7 +25,8 @@ class CarJoy:
     async def update(self, steering_command, linear_command):
         try:
             self.__update_steering(steering_command, self.__override_enabled)
-            self.__update_linear_movement(linear_command, self.__override_enabled)
+            self.__update_gear(linear_command, self.__override_enabled)
+            self.__update_linear_movement(self.__override_enabled)
 
             if self.__override_enabled:
                 await self.__update_override(self, (steering_command, linear_command))
@@ -43,7 +44,8 @@ class CarJoy:
             elif self.d_steering > 0.0:
                 self.steering = min(1.0, self.steering + self.d_steering)
 
-    def __update_linear_movement(self, linear_command, control_override: bool):
+    # NB! always call this before linear movement
+    def __update_gear(self, linear_command, control_override: bool):
         self.d_linear = linear_command - self.linear_command
 
         if not control_override:
@@ -52,19 +54,23 @@ class CarJoy:
 
             self.linear_command = linear_command
 
+        if self.d_linear > 0.0:
+            if self.gear == 0:  # start drive forward
+                self.__takeoff(1, control_override)
+        elif self.d_linear < 0.0:
+            if self.gear == 0:  # start drive backward
+                self.__takeoff(-1, control_override)
+
+    def __update_linear_movement(self, control_override: bool):
         if self.d_linear == 0.0:
             self.d_throttle = 0.0
         elif self.d_linear > 0.0:
-            if self.gear == 0:  # start drive forward
-                self.__takeoff(1, control_override)
-            elif self.gear == -1:
+            if self.gear == -1:
                 self.__decelerate(control_override)
             elif self.gear == 1:
                 self.__accelerate(control_override)
         elif self.d_linear < 0.0:
-            if self.gear == 0:  # start drive backward
-                self.__takeoff(-1, control_override)
-            elif self.gear == -1:
+            if self.gear == -1:
                 self.__accelerate(control_override)
             elif self.gear == 1:
                 self.__decelerate(control_override)
@@ -88,8 +94,9 @@ class CarJoy:
     def ext_update(self, predict_dict, commands):
         steering_command, linear_command = commands
 
-        if predict_dict['supervisor']:
-            self.__update_linear_movement(linear_command, False)
+        if 'supervisor' in predict_dict and predict_dict['supervisor']:
+            self.__update_gear(linear_command, False)
+            self.__update_linear_movement(False)
             self.__update_steering(steering_command, False)
         else:
             self.gear = predict_dict['d_gear']
