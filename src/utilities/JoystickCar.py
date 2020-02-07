@@ -103,6 +103,11 @@ class CarJoy:
             self.__update_linear_movement(False)
             self.__update_steering(steering_command, True)
             self.steering = np.clip(predict_dict['d_steering'], -1.0, 1.0)
+        elif predict_dict['update_mode'] == 'steer_diff':
+            self.__update_gear(linear_command, False)
+            self.__update_linear_movement(False)
+            self.__update_steering(steering_command, True)
+            self.__ext_update_steer_diff(predict_dict['d_steering'])
         else:
             self.gear = predict_dict['d_gear']
 
@@ -111,10 +116,11 @@ class CarJoy:
             else:
                 self.throttle = min(1.0, self.throttle + predict_dict['d_throttle'])
 
-            if predict_dict['d_steering'] < 0:
-                self.steering = max(-1.0, self.steering + predict_dict['d_steering'])
-            else:
-                self.steering = min(1.0, self.steering + predict_dict['d_steering'])
-
             self.linear_command = linear_command
             self.steering_command = steering_command
+
+    def __ext_update_steer_diff(self, steering_diff):
+        if steering_diff < 0:
+            self.steering = max(-1.0, self.steering + steering_diff)
+        else:
+            self.steering = min(1.0, self.steering + steering_diff)
