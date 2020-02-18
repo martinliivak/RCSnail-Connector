@@ -16,11 +16,12 @@ class RendererJoy:
         self.car = car
 
         self.black = (0, 0, 0)
+        self.white = (255, 255, 255)
         self.red = (255, 0, 0)
         self.green = (0, 255, 0)
         self.blue = (0, 0, 255)
 
-        self.font = pygame.font.SysFont('Roboto', 12)
+        self.font = pygame.font.SysFont('Roboto', 15)
 
         self.controller = pygame.joystick.Joystick(0)
         self.throttle_axis = 1
@@ -81,8 +82,8 @@ class RendererJoy:
 
         if self.car.batVoltage_mV >= 0:
             telemetry_text = "{0} mV".format(self.car.batVoltage_mV)
-            telemetry_texture = self.font.render(telemetry_text, True, self.red)
-            self.screen.blit(telemetry_texture, (3, self.window_height - 14))
+            telemetry_texture = self.font.render(telemetry_text, True, self.white)
+            self.screen.blit(telemetry_texture, (3, self.window_height - 25))
 
     async def render(self, rcs):
         current_time = 0

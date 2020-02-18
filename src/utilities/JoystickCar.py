@@ -110,11 +110,8 @@ class CarJoy:
             self.__ext_update_steer_diff(predict_dict['d_steering'])
         else:
             self.gear = predict_dict['d_gear']
-
-            if predict_dict['d_throttle'] < 0:
-                self.throttle = max(0.0, self.throttle + predict_dict['d_throttle'])
-            else:
-                self.throttle = min(1.0, self.throttle + predict_dict['d_throttle'])
+            self.__ext_update_steer_diff(predict_dict['d_steering'])
+            self.__ext_update_throttle_diff(predict_dict['d_throttle'])
 
             self.linear_command = linear_command
             self.steering_command = steering_command
@@ -124,3 +121,9 @@ class CarJoy:
             self.steering = max(-1.0, self.steering + steering_diff)
         else:
             self.steering = min(1.0, self.steering + steering_diff)
+
+    def __ext_update_throttle_diff(self, throttle_diff):
+        if throttle_diff < 0:
+            self.throttle = max(0.0, self.throttle + throttle_diff)
+        else:
+            self.throttle = min(1.0, self.throttle + throttle_diff)
