@@ -13,10 +13,10 @@ from commons.common_zmq import initialize_publisher, initialize_subscriber
 from commons.configuration_manager import ConfigurationManager
 
 from src.pipeline.interceptor import Interceptor
-from src.utilities.JoystickCar import CarJoy
-from src.utilities.KeyboardCar import CarKey
-from src.utilities.JoystickRenderer import RendererJoy
-from src.utilities.KeyboardRenderer import RendererKey
+from src.utilities.JoystickCar2 import JoystickCar2
+from src.utilities.KeyboardCar import KeyboardCar
+from src.utilities.JoystickRenderer2 import JoystickRenderer2
+from src.utilities.KeyboardRenderer import KeyboardRenderer
 
 
 def get_training_file_name(path_to_training):
@@ -41,18 +41,17 @@ def main(context: Context):
     loop.run_until_complete(initialize_subscriber(controls_queue, config.controls_queue_port))
 
     pygame_event_queue = asyncio.Queue()
-    pygame_executor = ThreadPoolExecutor(max_workers=1)
-    loop.run_in_executor(pygame_executor, pygame.init)
+    pygame.init()
     pygame.display.set_caption("RCSnail Connector")
 
     screen = pygame.display.set_mode((config.window_width, config.window_height))
     interceptor = Interceptor(config, data_queue, controls_queue)
-    car = CarJoy(config, update_override=interceptor.car_update_override)
-    renderer = RendererJoy(screen, car)
-    loop.run_in_executor(pygame_executor, renderer.init_controllers)
+    car = JoystickCar2(config, update_override=interceptor.car_update_override)
+    renderer = JoystickRenderer2(screen, car)
+    renderer.init_controllers()
     interceptor.set_renderer(renderer)
 
-    pygame_task = loop.run_in_executor(pygame_executor, renderer.pygame_event_loop, loop, pygame_event_queue)
+    pygame_task = loop.run_in_executor(None, renderer.pygame_event_loop, loop, pygame_event_queue)
     render_task = asyncio.ensure_future(renderer.render(rcs))
     event_task = asyncio.ensure_future(renderer.register_pygame_events(pygame_event_queue))
     queue_task = asyncio.ensure_future(rcs.enqueue(loop, interceptor.new_frame, interceptor.new_telemetry, track=config.track))

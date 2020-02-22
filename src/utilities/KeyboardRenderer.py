@@ -6,7 +6,7 @@ from av import VideoFrame
 from src.utilities import KeyboardCar
 
 
-class RendererKey:
+class KeyboardRenderer:
     def __init__(self, screen, car: KeyboardCar):
         self.window_width = 960
         self.window_height = 480

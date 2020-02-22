@@ -39,7 +39,7 @@ class Interceptor:
             if self.frame is None or self.telemetry is None:
                 return
 
-            # TODO this may have to send out (full state + diffs)
+            # TODO when decision on diffs is final, this has to send out diffs + current values for expert supervision
             self.expert_updates = CarControlUpdates(car.gear, car.d_steering, car.d_throttle, car.d_braking, 'supervisor')
 
             if self.expert_supervision_enabled:
