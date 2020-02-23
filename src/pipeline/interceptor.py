@@ -28,7 +28,7 @@ class Interceptor:
             self.frame = self.__convert_frame(frame)
 
     def __convert_frame(self, frame):
-        return np.array(frame.to_image().resize(self.resolution)).astype(np.float32)
+        return np.array(frame.to_image().resize(self.resolution), dtype=np.float32)
 
     def new_telemetry(self, telemetry):
         self.renderer.handle_new_telemetry(telemetry)

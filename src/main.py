@@ -1,7 +1,6 @@
 import os
 import datetime
 import asyncio
-from concurrent.futures.thread import ThreadPoolExecutor
 import pygame
 import logging
 import zmq
