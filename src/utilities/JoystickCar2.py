@@ -11,6 +11,7 @@ class JoystickCar2:
         self.d_steering = 0.0
         self.d_throttle = 0.0
         self.d_braking = 0.0
+        self.d_gear = 0
 
         self.p_steering = 0.0
 
@@ -26,13 +27,18 @@ class JoystickCar2:
 
     async def update(self, steering_command, linear_command):
         try:
+            self.__update_gear(self.__override_enabled)
             self.__update_steering(steering_command, self.__override_enabled)
-            self.__update_linear_movement(self.__override_enabled)
+            self.__update_linear_movement(linear_command, self.__override_enabled)
 
             if self.__override_enabled:
                 await self.__update_override(self, (steering_command, linear_command))
         except Exception as ex:
             print("Car update exception: {}".format(ex))
+
+    def __update_gear(self, control_override: bool):
+        if not control_override:
+            self.gear = self.d_gear
 
     def __update_steering(self, steering_command, control_override: bool):
         self.d_steering = steering_command - self.steering_command
@@ -46,18 +52,23 @@ class JoystickCar2:
                 self.steering = min(1.0, self.steering + self.d_steering)
 
     def gear_up(self):
-        if self.gear == -1:
-            self.gear = 0
-        elif self.gear == 0:
-            self.gear = 1
+        if self.d_gear == -1:
+            self.d_gear = 0
+        elif self.d_gear == 0:
+            self.d_gear = 1
 
     def gear_down(self):
-        if self.gear == 1:
-            self.gear = 0
-        elif self.gear == 0:
-            self.gear = -1
+        if self.d_gear == 1:
+            self.d_gear = 0
+        elif self.d_gear == 0:
+            self.d_gear = -1
 
-    def __update_linear_movement(self, control_override: bool):
+    def __update_linear_movement(self, linear_command, control_override: bool):
+        self.d_linear = linear_command - self.linear_command
+
+        if not control_override:
+            self.linear_command = linear_command
+
         if self.d_linear == 0.0:
             self.d_throttle = 0.0
         elif self.d_linear > 0.0 and self.gear is not 0:
@@ -80,14 +91,17 @@ class JoystickCar2:
 
         # TODO when decision on diffs is in, this can simply update from values directly
         if predict_dict['update_mode'] == 'supervisor':
-            self.__update_linear_movement(False)
+            self.__update_gear(False)
+            self.__update_linear_movement(linear_command, False)
             self.__update_steering(steering_command, False)
         elif predict_dict['update_mode'] == 'steer':
-            self.__update_linear_movement(False)
+            self.__update_gear(False)
+            self.__update_linear_movement(linear_command, False)
             self.__update_steering(steering_command, True)
             self.steering = np.clip(predict_dict['d_steering'], -1.0, 1.0)
         elif predict_dict['update_mode'] == 'steer_diff':
-            self.__update_linear_movement(False)
+            self.__update_gear(False)
+            self.__update_linear_movement(linear_command, False)
             self.__update_steering(steering_command, True)
             self.__ext_update_steer_diff(predict_dict['d_steering'])
         else:
