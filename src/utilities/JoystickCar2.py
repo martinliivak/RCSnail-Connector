@@ -3,7 +3,7 @@ import numpy as np
 
 class JoystickCar2:
     def __init__(self, configuration, update_override=None):
-        # units in percentage range 0..1
+        # controls except gear are in range 0..1
         self.steering = 0.0
         self.throttle = 0.0
         self.braking = 0.0

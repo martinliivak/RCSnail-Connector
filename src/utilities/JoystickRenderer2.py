@@ -8,7 +8,7 @@ from src.utilities import JoystickCar2
 
 class JoystickRenderer2:
     def __init__(self, screen, car: JoystickCar2):
-        self.window_width = 960
+        self.window_width = 1000
         self.window_height = 480
         self.FPS = 30
         self.latest_frame = None
@@ -21,7 +21,7 @@ class JoystickRenderer2:
         self.green = (0, 255, 0)
         self.blue = (0, 0, 255)
 
-        self.font = pygame.font.SysFont('Roboto', 15)
+        self.font = pygame.font.SysFont('Roboto', 20)
 
         self.controller = pygame.joystick.Joystick(0)
         self.throttle_axis = 5
@@ -91,10 +91,13 @@ class JoystickRenderer2:
 
         if self.car.batVoltage_mV >= 0:
             voltage_text = '{0} mV'.format(self.car.batVoltage_mV)
-            self.render_text(voltage_text, x=3, y=self.window_height - 25, color=self.white)
+            self.render_text(voltage_text, x=5, y=self.window_height - 25, color=self.white)
 
-        pred_text = 'P: {0:.4f}'.format(self.car.p_steering)
-        self.render_text(pred_text, x=3, y=self.window_height - 50, color=self.white)
+        gear_text = 'G: {0}'.format(self.car.gear)
+        self.render_text(gear_text, x=5, y=50, color=self.white)
+
+        pred_text = 'P: {0:.3f}'.format(self.car.p_steering)
+        self.render_text(pred_text, x=5, y=75, color=self.white)
 
     def render_text(self, text, x, y, color):
         texture = self.font.render(text, True, color)
