@@ -94,7 +94,7 @@ class JoystickRenderer2:
             self.render_text(voltage_text, x=5, y=self.window_height - 25, color=self.white)
 
         gear_text = 'G: {0}'.format(self.car.gear)
-        self.render_text(gear_text, x=5, y=50, color=self.white)
+        self.render_text(gear_text, x=5, y=50, color=self.green)
 
         pred_text = 'P: {0:.3f}'.format(self.car.p_steering)
         self.render_text(pred_text, x=5, y=75, color=self.white)
