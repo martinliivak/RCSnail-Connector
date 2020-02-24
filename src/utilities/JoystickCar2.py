@@ -77,10 +77,6 @@ class JoystickCar2:
 
     def ext_update(self, predict_dict, commands):
         steering_command, linear_command = commands
-        #print(steering_command)
-        #print(self.steering_command)
-        print('recv: {}'.format(predict_dict['d_steering']))
-        #print('-----')
 
         # TODO when decision on diffs is in, this can simply update from values directly
         if predict_dict['update_mode'] == 'supervisor':
