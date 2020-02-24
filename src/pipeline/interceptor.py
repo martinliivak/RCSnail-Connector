@@ -41,6 +41,7 @@ class Interceptor:
                 return
 
             # TODO when decision on diffs is final, this has to send out diffs + current values for expert supervision
+            print('sent: {}'.format(car.d_steering))
             self.expert_updates = CarControlUpdates(car.d_gear, car.d_steering, car.d_throttle, car.d_braking, 'supervisor')
             self.telemetry['conn_time'] = int(datetime.now().timestamp() * 1000)
             if self.expert_supervision_enabled:
@@ -54,13 +55,10 @@ class Interceptor:
 
     async def __update_car_from_predictions(self, car, commands):
         try:
-            prediction_ready = await self.controls_queue.poll(timeout=20)
+            predicted_updates = await self.controls_queue.recv_json()
 
-            if prediction_ready:
-                predicted_updates = await self.controls_queue.recv_json()
-
-                if predicted_updates is not None:
-                    #print("updates: {}".format(predicted_updates))
-                    car.ext_update(predicted_updates, commands)
+            if predicted_updates is not None:
+                #print("updates: {}".format(predicted_updates))
+                car.ext_update(predicted_updates, commands)
         except Exception as ex:
             print("Prediction exception: {}".format(ex))
