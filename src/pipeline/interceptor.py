@@ -1,4 +1,5 @@
 import numpy as np
+from datetime import datetime
 from zmq.asyncio import Socket
 
 from commons.car_controls import CarControlUpdates, CarControls
@@ -40,8 +41,8 @@ class Interceptor:
                 return
 
             # TODO when decision on diffs is final, this has to send out diffs + current values for expert supervision
-            self.expert_updates = CarControlUpdates(car.gear, car.d_steering, car.d_throttle, car.d_braking, 'supervisor')
-
+            self.expert_updates = CarControlUpdates(car.d_gear, car.d_steering, car.d_throttle, car.d_braking, 'supervisor')
+            self.telemetry['conn_time'] = int(datetime.now().timestamp() * 1000)
             if self.expert_supervision_enabled:
                 send_array_with_json(self.data_queue, self.frame, (self.telemetry, self.expert_updates.to_dict()))
             else:

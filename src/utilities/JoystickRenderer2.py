@@ -117,6 +117,8 @@ class JoystickRenderer2:
                 steering = self.controller.get_axis(self.steering_axis)
                 throttle = (self.controller.get_axis(self.throttle_axis) + 1.0) / 2.0
 
+                # TODO separate time calculation for decreasing car update frequency if override is enabled
+
                 await self.car.update(steering, throttle)
                 await rcs.updateControl(self.car.gear, self.car.steering, self.car.throttle, self.car.braking)
                 self.screen.fill(self.black)
