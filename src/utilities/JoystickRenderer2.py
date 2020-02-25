@@ -10,8 +10,8 @@ class JoystickRenderer2:
     def __init__(self, config, screen, car: JoystickCar2):
         self.window_width = 1000
         self.window_height = 480
-        self.FPS = 30
-        self.control_FPS = 10
+        self.FPS = config.FPS
+        self.control_FPS = config.control_FPS
         self.latest_frame = None
         self.screen = screen
         self.car = car
