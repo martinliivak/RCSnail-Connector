@@ -3,7 +3,7 @@ import numpy as np
 
 class JoystickCar:
     def __init__(self, configuration, send_car_state=None, recv_car_controls=None):
-        # controls except gear are in range 0..1
+        """Controls are in range 0..1. Gear has discrete values from {1, 0, -1}."""
         self.steering = 0.0
         self.throttle = 0.0
         self.braking = 0.0
@@ -55,6 +55,7 @@ class JoystickCar:
             self.linear_command = linear_command
             self.steering_command = steering_command
 
+            # TODO remove this haltuura
             if 'p_steering' in update_dict:
                 self.p_steering = update_dict['p_steering']
 
