@@ -45,7 +45,7 @@ def main(context: Context):
 
     screen = pygame.display.set_mode((config.window_width, config.window_height))
     interceptor = Interceptor(config, data_queue, controls_queue)
-    car = JoystickCar2(config, update_override=interceptor.car_update_override)
+    car = JoystickCar2(config, send_car_state=interceptor.send_car_state, recv_car_controls=interceptor.recv_car_controls)
     renderer = JoystickRenderer2(config, screen, car)
     renderer.init_controllers()
     interceptor.set_renderer(renderer)

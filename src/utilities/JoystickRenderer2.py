@@ -107,8 +107,11 @@ class JoystickRenderer2:
         self.screen.blit(texture, (x, y))
 
     async def render(self, rcs):
+        sent_steering, sent_throttle = None, None
+        should_send = False
+        should_resend = True
+
         current_time = time.time()
-        override_time = time.time()
         frame_size = (640, 480)
         ovl = pygame.Overlay(pygame.YV12_OVERLAY, frame_size)
         ovl.set_location(pygame.Rect(0, 0, self.window_width - 20, self.window_height - 10))
@@ -121,15 +124,18 @@ class JoystickRenderer2:
                 steering = self.controller.get_axis(self.steering_axis)
                 throttle = (self.controller.get_axis(self.throttle_axis) + 1.0) / 2.0
 
+                # should_resend is True until sending car state succeeds, at which point it's set to False.
+                # If we receive new controls, should_send is set to True, otherwise it's False.
                 if self.model_override_enabled:
-                    if 1 / self.control_FPS - (current_time - override_time) <= 0:
-                        await self.car.update(steering, throttle)
-                        await rcs.updateControl(self.car.gear, self.car.steering, self.car.throttle, self.car.braking)
-                        override_time = time.time()
-                else:
-                    await self.car.update(steering, throttle)
-                    await rcs.updateControl(self.car.gear, self.car.steering, self.car.throttle, self.car.braking)
+                    if should_send or should_resend:
+                        sent_steering, sent_throttle = steering, throttle
 
+                        should_resend = self.car.update_car_state(sent_steering, sent_throttle)
+                    should_send = await self.car.update_car_controls(sent_steering, sent_throttle)
+                else:
+                    self.car.update_car_state(steering, throttle)
+
+                await rcs.updateControl(self.car.gear, self.car.steering, self.car.throttle, self.car.braking)
                 self.screen.fill(self.black)
                 if isinstance(self.latest_frame, VideoFrame):
                     image_to_ndarray = self.latest_frame.to_rgb().to_ndarray()

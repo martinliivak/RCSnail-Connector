@@ -2,7 +2,7 @@ import numpy as np
 
 
 class JoystickCar2:
-    def __init__(self, configuration, update_override=None):
+    def __init__(self, configuration, send_car_state=None, recv_car_controls=None):
         # controls except gear are in range 0..1
         self.steering = 0.0
         self.throttle = 0.0
@@ -21,19 +21,44 @@ class JoystickCar2:
         # telemetry
         self.batVoltage_mV = 0
 
-        self.__override_enabled = update_override is not None and configuration.model_override_enabled
-        self.__update_override = update_override
+        self.__override_enabled = configuration.model_override_enabled
 
-    async def update(self, steering_command, linear_command):
+        if not self.__override_enabled and (send_car_state is None or recv_car_controls is None):
+            raise ValueError("Override enabled, but methods are None")
+
+        self.__send_car_state = send_car_state
+        self.__recv_car_controls = recv_car_controls
+
+    def update_car_state(self, steering_command, linear_command):
+        """Returns whether or not it should try sending state again."""
         try:
             self.__update_gear(self.__override_enabled)
             self.__update_steering(steering_command, self.__override_enabled)
             self.__update_linear_movement(linear_command, self.__override_enabled)
 
             if self.__override_enabled:
-                await self.__update_override(self, (steering_command, linear_command))
+                return self.__send_car_state(self)
         except Exception as ex:
             print("Car update exception: {}".format(ex))
+
+    async def update_car_controls(self, steering_command, linear_command):
+        """Returns whether or not we can send a new state."""
+        update_dict = await self.__recv_car_controls()
+
+        if update_dict is None:
+            return False
+        else:
+            self.steering = update_dict['d_steering']
+            self.gear = update_dict['d_gear']
+            self.throttle = update_dict['d_throttle']
+
+            self.linear_command = linear_command
+            self.steering_command = steering_command
+
+            if 'p_steering' in update_dict:
+                self.p_steering = update_dict['p_steering']
+
+            return True
 
     def __update_gear(self, control_override: bool):
         if not control_override:
@@ -74,25 +99,3 @@ class JoystickCar2:
         if not control_override:
             self.linear_command = linear_command
             self.throttle = self.d_throttle
-
-    def ext_update(self, predict_dict, commands):
-        steering_command, linear_command = commands
-
-        if predict_dict['update_mode'] == 'supervisor':
-            self.steering = predict_dict['d_steering']
-            self.throttle = predict_dict['d_throttle']
-            self.gear = predict_dict['d_gear']
-        elif predict_dict['update_mode'] == 'steer':
-            self.steering = np.clip(predict_dict['d_steering'], -1.0, 1.0)
-            self.throttle = predict_dict['d_throttle']
-            self.gear = predict_dict['d_gear']
-        else:
-            self.steering = predict_dict['d_steering']
-            self.throttle = predict_dict['d_throttle']
-            self.gear = predict_dict['d_gear']
-
-        self.linear_command = linear_command
-        self.steering_command = steering_command
-
-        if 'p_steering' in predict_dict:
-            self.p_steering = predict_dict['p_steering']
