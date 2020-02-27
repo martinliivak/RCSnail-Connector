@@ -1,5 +1,5 @@
 
-class CarKey:
+class KeyboardCar:
     def __init__(self, configuration, update_override=None):
         # units in percentage range 0..1
         self.steering = 0.0

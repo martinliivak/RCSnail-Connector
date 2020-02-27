@@ -1,9 +1,9 @@
 import numpy as np
 
 
-class CarJoy:
-    def __init__(self, configuration, update_override=None):
-        # units in percentage range 0..1
+class JoystickCar:
+    def __init__(self, configuration, send_car_state=None, recv_car_controls=None):
+        # controls except gear are in range 0..1
         self.steering = 0.0
         self.throttle = 0.0
         self.braking = 0.0
@@ -11,98 +11,91 @@ class CarJoy:
         self.d_steering = 0.0
         self.d_throttle = 0.0
         self.d_braking = 0.0
+        self.d_gear = 0
+
+        self.p_steering = 0.0
 
         self.linear_command = 0.0
-        self.d_linear = 0.0
         self.steering_command = 0.0
 
         # telemetry
         self.batVoltage_mV = 0
 
-        self.__override_enabled = update_override is not None and configuration.model_override_enabled
-        self.__update_override = update_override
+        self.__override_enabled = configuration.model_override_enabled
 
-    async def update(self, steering_command, linear_command):
+        if not self.__override_enabled and (send_car_state is None or recv_car_controls is None):
+            raise ValueError("Override enabled, but methods are None")
+
+        self.__send_car_state = send_car_state
+        self.__recv_car_controls = recv_car_controls
+
+    def update_car_state(self, steering_command, linear_command):
+        """Returns whether or not it should try sending state again."""
         try:
+            self.__update_gear(self.__override_enabled)
             self.__update_steering(steering_command, self.__override_enabled)
             self.__update_linear_movement(linear_command, self.__override_enabled)
 
             if self.__override_enabled:
-                await self.__update_override(self, (steering_command, linear_command))
+                return self.__send_car_state(self)
         except Exception as ex:
             print("Car update exception: {}".format(ex))
 
+    async def update_car_controls(self, steering_command, linear_command):
+        """Returns whether or not we can send a new state."""
+        update_dict = await self.__recv_car_controls()
+
+        if update_dict is None:
+            return False
+        else:
+            self.steering = update_dict['d_steering']
+            self.gear = update_dict['d_gear']
+            self.throttle = update_dict['d_throttle']
+
+            self.linear_command = linear_command
+            self.steering_command = steering_command
+
+            if 'p_steering' in update_dict:
+                self.p_steering = update_dict['p_steering']
+
+            return True
+
+    def __update_gear(self, control_override: bool):
+        if not control_override:
+            self.gear = self.d_gear
+
     def __update_steering(self, steering_command, control_override: bool):
-        self.d_steering = steering_command - self.steering_command
+        diff = steering_command - self.steering_command
+
+        if diff < 0.0:
+            self.d_steering = max(-1.0, self.steering + diff)
+        elif diff > 0.0:
+            self.d_steering = min(1.0, self.steering + diff)
 
         if not control_override:
             self.steering_command = steering_command
+            self.steering = self.d_steering
 
-            if self.d_steering < 0.0:
-                self.steering = max(-1.0, self.steering + self.d_steering)
-            elif self.d_steering > 0.0:
-                self.steering = min(1.0, self.steering + self.d_steering)
+    def gear_up(self):
+        if self.d_gear == -1:
+            self.d_gear = 0
+        elif self.d_gear == 0:
+            self.d_gear = 1
+
+    def gear_down(self):
+        if self.d_gear == 1:
+            self.d_gear = 0
+        elif self.d_gear == 0:
+            self.d_gear = -1
 
     def __update_linear_movement(self, linear_command, control_override: bool):
-        self.d_linear = linear_command - self.linear_command
+        diff = linear_command - self.linear_command
+
+        if diff > 0.0 and self.gear is not 0:
+            self.d_throttle = min(1.0, self.throttle + diff)
+        elif diff < 0.0 and self.gear is not 0:
+            self.d_throttle = max(0.0, self.throttle + diff)
 
         if not control_override:
-            if self.linear_command <= 0.0 <= linear_command or self.linear_command >= 0.0 >= linear_command:
-                self.gear = 0
-
             self.linear_command = linear_command
-
-        if self.d_linear == 0.0:
-            self.d_throttle = 0.0
-        elif self.d_linear > 0.0:
-            if self.gear == 0:  # start drive forward
-                self.__takeoff(1, control_override)
-            elif self.gear == -1:
-                self.__decelerate(control_override)
-            elif self.gear == 1:
-                self.__accelerate(control_override)
-        elif self.d_linear < 0.0:
-            if self.gear == 0:  # start drive backward
-                self.__takeoff(-1, control_override)
-            elif self.gear == -1:
-                self.__accelerate(control_override)
-            elif self.gear == 1:
-                self.__decelerate(control_override)
-
-    def __takeoff(self, gear, control_override: bool):
-        self.d_throttle = self.d_linear * self.gear
-        if not control_override:
-            self.gear = gear
-            self.throttle = 0.0
-
-    def __accelerate(self, control_override: bool):
-        self.d_throttle = self.d_linear * self.gear
-        if not control_override:
-            self.throttle = min(1.0, self.throttle + self.d_throttle)
-
-    def __decelerate(self, control_override: bool):
-        self.d_throttle = -1 * np.abs(self.d_linear)
-        if not control_override:
-            self.throttle = max(0.0, self.throttle + self.d_throttle)
-
-    def ext_update(self, predict_dict, commands):
-        steering_command, linear_command = commands
-
-        if predict_dict['supervisor']:
-            self.__update_linear_movement(linear_command, False)
-            self.__update_steering(steering_command, False)
-        else:
-            self.gear = predict_dict['d_gear']
-
-            if predict_dict['d_throttle'] < 0:
-                self.throttle = max(0.0, self.throttle + predict_dict['d_throttle'])
-            else:
-                self.throttle = min(1.0, self.throttle + predict_dict['d_throttle'])
-
-            if predict_dict['d_steering'] < 0:
-                self.steering = max(-1.0, self.steering + predict_dict['d_steering'])
-            else:
-                self.steering = min(1.0, self.steering + predict_dict['d_steering'])
-
-            self.linear_command = linear_command
-            self.steering_command = steering_command
+            self.throttle = self.d_throttle
