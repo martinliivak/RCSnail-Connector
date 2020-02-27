@@ -3,11 +3,11 @@ import time
 import pygame
 from av import VideoFrame
 
-from src.utilities import JoystickCar2
+from src.utilities import JoystickCar
 
 
-class JoystickRenderer2:
-    def __init__(self, config, screen, car: JoystickCar2):
+class JoystickRenderer:
+    def __init__(self, config, screen, car: JoystickCar):
         self.window_width = 1000
         self.window_height = 480
         self.FPS = config.FPS

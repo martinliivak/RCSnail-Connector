@@ -12,9 +12,9 @@ from commons.common_zmq import initialize_publisher, initialize_subscriber
 from commons.configuration_manager import ConfigurationManager
 
 from src.pipeline.interceptor import Interceptor
-from src.utilities.JoystickCar2 import JoystickCar2
+from src.utilities.JoystickCar import JoystickCar
 from src.utilities.KeyboardCar import KeyboardCar
-from src.utilities.JoystickRenderer2 import JoystickRenderer2
+from src.utilities.JoystickRenderer import JoystickRenderer
 from src.utilities.KeyboardRenderer import KeyboardRenderer
 
 
@@ -45,8 +45,8 @@ def main(context: Context):
 
     screen = pygame.display.set_mode((config.window_width, config.window_height))
     interceptor = Interceptor(config, data_queue, controls_queue)
-    car = JoystickCar2(config, send_car_state=interceptor.send_car_state, recv_car_controls=interceptor.recv_car_controls)
-    renderer = JoystickRenderer2(config, screen, car)
+    car = JoystickCar(config, send_car_state=interceptor.send_car_state, recv_car_controls=interceptor.recv_car_controls)
+    renderer = JoystickRenderer(config, screen, car)
     renderer.init_controllers()
     interceptor.set_renderer(renderer)
 

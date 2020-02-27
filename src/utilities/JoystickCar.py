@@ -1,7 +1,7 @@
 import numpy as np
 
 
-class JoystickCar2:
+class JoystickCar:
     def __init__(self, configuration, send_car_state=None, recv_car_controls=None):
         # controls except gear are in range 0..1
         self.steering = 0.0
