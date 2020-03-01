@@ -11,7 +11,6 @@ class JoystickRenderer:
         self.window_width = 1000
         self.window_height = 480
         self.FPS = config.FPS
-        self.control_FPS = config.control_FPS
         self.latest_frame = None
         self.screen = screen
         self.car = car
