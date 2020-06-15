@@ -60,37 +60,19 @@ class JoystickRenderer:
     def draw(self):
         # Steering gauge:
         if self.car.steering < 0:
-            R = pygame.Rect((self.car.steering + 1.0) / 2.0 * self.window_width,
-                            self.window_height - 10,
-                            -self.car.steering * self.window_width / 2,
-                            10)
+            steer_gauge = pygame.Rect((self.car.steering + 1.0) / 2.0 * self.window_width, self.window_height - 10,
+                                      -self.car.steering * self.window_width / 2, 10)
         else:
-            R = pygame.Rect(self.window_width / 2, self.window_height - 10,
-                            self.car.steering * self.window_width / 2, 10)
-        pygame.draw.rect(self.screen, self.green, R)
+            steer_gauge = pygame.Rect(self.window_width / 2, self.window_height - 10,
+                                      self.car.steering * self.window_width / 2, 10)
+        pygame.draw.rect(self.screen, self.green, steer_gauge)
 
-        # Acceleration/braking gauge:
-        if self.car.gear == 1:
-            if self.car.throttle > 0.0:
-                R = pygame.Rect(self.window_width - 20, 0,
-                                10, self.window_height / 2 * self.car.throttle / 1.0)
-                R = R.move(0, self.window_height / 2 - R.height)
-                pygame.draw.rect(self.screen, self.green, R)
-            if self.car.braking > 0.0:
-                R = pygame.Rect(self.window_width - 20, self.window_height / 2,
-                                10, self.window_height / 2 * self.car.braking / 1.0)
-                pygame.draw.rect(self.screen, self.red, R)
-        elif self.car.gear == -1:
-            if self.car.throttle > 0.0:
-                R = pygame.Rect(self.window_width - 20, self.window_height / 2,
-                                10, self.window_height / 2 * self.car.throttle / 1.0)
-                pygame.draw.rect(self.screen, self.green, R)
-            if self.car.braking > 0.0:
-                R = pygame.Rect(self.window_width - 20, 0,
-                                10, self.window_height / 2 * self.car.braking / 1.0)
-                R = R.move(0, self.window_height / 2 - R.height)
-                pygame.draw.rect(self.screen, self.red, R)
+        # Throttle gauge:
+        throttle_gauge = pygame.Rect(self.window_width - 50, (1.0 - self.car.throttle) * self.window_height - 10,
+                                     10, self.window_height * self.car.throttle)
+        pygame.draw.rect(self.screen, self.green, throttle_gauge)
 
+        # Voltage text
         if self.car.batVoltage_mV >= 0:
             voltage_text = '{0} mV'.format(self.car.batVoltage_mV)
             self.render_text(voltage_text, x=5, y=self.window_height - 25, color=self.white)
@@ -131,10 +113,11 @@ class JoystickRenderer:
 
                         should_resend = self.car.update_car_state(sent_steering, sent_throttle)
                     should_send = await self.car.update_car_controls(sent_steering, sent_throttle)
+                    await rcs.updateControl(self.car.gear, self.car.steering, self.car.throttle, self.car.braking)
                 else:
                     self.car.update_car_state(steering, throttle)
+                    await rcs.updateControl(self.car.gear, self.car.steering, self.car.throttle, self.car.braking)
 
-                await rcs.updateControl(self.car.gear, self.car.steering, self.car.throttle, self.car.braking)
                 self.screen.fill(self.black)
                 if isinstance(self.latest_frame, VideoFrame):
                     image_to_ndarray = self.latest_frame.to_rgb().to_ndarray()

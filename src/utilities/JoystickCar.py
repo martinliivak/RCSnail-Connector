@@ -55,7 +55,7 @@ class JoystickCar:
             self.linear_command = linear_command
             self.steering_command = steering_command
 
-            # TODO remove this haltuura
+            # TODO remove this haltuura at some point
             if 'p_steering' in update_dict:
                 self.p_steering = update_dict['p_steering']
 
