@@ -19,6 +19,7 @@ class JoystickRenderer:
 
         self.black = (0, 0, 0)
         self.white = (255, 255, 255)
+        self.grey = (169, 169, 169)
         self.red = (255, 0, 0)
         self.green = (0, 153, 0)
         self.blue = (0, 128, 255)
@@ -30,6 +31,7 @@ class JoystickRenderer:
         self.steering_axis = 0
         self.gear_up_button = 3
         self.gear_down_button = 2
+        self.manual_control_toggle_button = 1
 
     def init_controllers(self):
         self.controller.init()
@@ -54,7 +56,8 @@ class JoystickRenderer:
                     self.car.gear_up()
                 elif self.controller.get_button(self.gear_down_button):
                     self.car.gear_down()
-
+                elif self.controller.get_button(self.manual_control_toggle_button):
+                    self.car.manual_override_toggle()
         asyncio.get_event_loop().stop()
 
     def draw(self):
@@ -65,12 +68,12 @@ class JoystickRenderer:
         else:
             steer_gauge = pygame.Rect(self.window_width / 2, self.window_height - 10,
                                       self.car.steering * self.window_width / 2, 10)
-        pygame.draw.rect(self.screen, self.green, steer_gauge)
+        pygame.draw.rect(self.screen, self.grey, steer_gauge)
 
         # Throttle gauge:
         throttle_gauge = pygame.Rect(self.window_width - 50, (1.0 - self.car.throttle) * self.window_height - 10,
                                      10, self.window_height * self.car.throttle)
-        pygame.draw.rect(self.screen, self.green, throttle_gauge)
+        pygame.draw.rect(self.screen, self.grey, throttle_gauge)
 
         # Voltage text
         if self.car.batVoltage_mV >= 0:
@@ -82,6 +85,9 @@ class JoystickRenderer:
 
         pred_text = 'P: {0:.3f}'.format(self.car.p_steering)
         self.render_text(pred_text, x=5, y=75, color=self.white)
+
+        manual_override_text = 'manual override' if self.car.manual_override else ''
+        self.render_text(manual_override_text, x=5, y=25, color=self.red)
 
     def render_text(self, text, x, y, color):
         texture = self.font.render(text, True, color)

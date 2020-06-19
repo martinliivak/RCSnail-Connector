@@ -13,6 +13,7 @@ class JoystickCar:
         self.d_braking = 0.0
         self.d_gear = 0
 
+        self.manual_override = False
         self.p_steering = 0.0
 
         self.linear_command = 0.0
@@ -88,6 +89,9 @@ class JoystickCar:
             self.d_gear = 0
         elif self.d_gear == 0:
             self.d_gear = -1
+
+    def manual_override_toggle(self):
+        self.manual_override = not self.manual_override
 
     def __update_linear_movement(self, linear_command, control_override: bool):
         diff = linear_command - self.linear_command

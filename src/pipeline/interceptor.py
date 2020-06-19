@@ -43,7 +43,7 @@ class Interceptor:
             if self.frame is None or self.telemetry is None:
                 return True
 
-            self.expert_updates = CarControlUpdates(car.d_gear, car.d_steering, car.d_throttle, car.d_braking)
+            self.expert_updates = CarControlUpdates(car.d_gear, car.d_steering, car.d_throttle, car.d_braking, car.manual_override)
             self.telemetry['conn_time'] = int(datetime.now().timestamp() * 1000)
             if self.expert_supervision_enabled:
                 send_array_with_json(self.data_queue, self.frame, (self.telemetry, self.expert_updates.to_dict()))
