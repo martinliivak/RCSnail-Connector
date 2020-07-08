@@ -1,6 +1,6 @@
 # RCSnail properties
-window_width: 960
-window_height: 480
+window_width: 965
+window_height: 485
 frame_width: 180
 frame_height: 120
 FPS: 30

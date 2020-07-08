@@ -49,14 +49,14 @@ class JoystickCar:
         if update_dict is None:
             return False
         else:
-            self.steering = update_dict['d_steering']
+            self.steering = np.clip(update_dict['d_steering'], -1.0, 1.0)
             self.gear = update_dict['d_gear']
-            self.throttle = update_dict['d_throttle']
+            self.throttle = np.clip(update_dict['d_throttle'], 0.0, 1.0)
 
             self.linear_command = linear_command
             self.steering_command = steering_command
 
-            # TODO remove this haltuura at some point
+            # TODO remove/update this at some point
             if 'p_steering' in update_dict:
                 self.p_steering = update_dict['p_steering']
 
