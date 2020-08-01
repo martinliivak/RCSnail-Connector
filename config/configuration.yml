@@ -5,6 +5,7 @@ frame_width: 180
 frame_height: 120
 FPS: 30
 track: eeden
+car: eeden_i8_04
 # ZMQ properties
 data_queue_port: 5551
 controls_queue_port: 5552

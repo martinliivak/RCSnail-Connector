@@ -94,9 +94,6 @@ class JoystickRenderer:
         gear_text = 'G: {0}'.format(self.car.gear)
         self.render_text(gear_text, x=5, y=50, color=self.green)
 
-        pred_text = 'P: {0:.3f}'.format(self.car.p_steering)
-        self.render_text(pred_text, x=5, y=75, color=self.white)
-
         manual_override_text = 'manual override' if self.car.manual_override else ''
         self.render_text(manual_override_text, x=5, y=25, color=self.red)
 
