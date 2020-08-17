@@ -3,7 +3,7 @@ import numpy as np
 
 class JoystickCar:
     def __init__(self, configuration, send_car_state=None, recv_car_controls=None):
-        # controls except gear are in range 0..1
+        """Controls are in range 0..1. Gear has discrete values from {1, 0, -1}."""
         self.steering = 0.0
         self.throttle = 0.0
         self.braking = 0.0
@@ -13,6 +13,7 @@ class JoystickCar:
         self.d_braking = 0.0
         self.d_gear = 0
 
+        self.manual_override = False
         self.p_steering = 0.0
 
         self.linear_command = 0.0
@@ -48,13 +49,14 @@ class JoystickCar:
         if update_dict is None:
             return False
         else:
-            self.steering = update_dict['d_steering']
+            self.steering = np.clip(update_dict['d_steering'], -1.0, 1.0)
             self.gear = update_dict['d_gear']
-            self.throttle = update_dict['d_throttle']
+            self.throttle = np.clip(update_dict['d_throttle'], 0.0, 1.0)
 
             self.linear_command = linear_command
             self.steering_command = steering_command
 
+            # TODO remove/update this at some point
             if 'p_steering' in update_dict:
                 self.p_steering = update_dict['p_steering']
 
@@ -87,6 +89,9 @@ class JoystickCar:
             self.d_gear = 0
         elif self.d_gear == 0:
             self.d_gear = -1
+
+    def manual_override_toggle(self):
+        self.manual_override = not self.manual_override
 
     def __update_linear_movement(self, linear_command, control_override: bool):
         diff = linear_command - self.linear_command
