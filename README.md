@@ -20,7 +20,7 @@ pip install aiortc
 ###### Other required packages
 ```
 pip install aiohttp aiohttp-sse-client
-pip install pygame Pyrebase opencv-python websockets requests python-firebase firebasedata
+pip install pygame pirebase opencv-python websockets requests python-firebase firebasedata Pillow
 pip install ruamel.yaml
 ```
 
