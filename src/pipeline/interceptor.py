@@ -31,7 +31,14 @@ class Interceptor:
 
     def __convert_frame(self, frame):
         # for some forsaken reason it needs to be flipped here.
-        return flip(np.array(frame.to_image().resize(self.resolution), dtype=np.float32), 1)
+        try:
+            image = frame.to_image()
+            resized_image = image.resize(self.resolution)
+            np_array = np.array(resized_image, dtype=np.float32)
+            np_array = flip(np_array, 1)
+            return np_array
+        except Exception as ex:
+            print("Convert frame exception: {}".format(ex))
 
     def new_telemetry(self, telemetry):
         self.renderer.handle_new_telemetry(telemetry)
