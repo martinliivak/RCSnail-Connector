@@ -111,9 +111,6 @@ class JoystickRenderer:
         throttle = 0.0
 
         current_time = time.time()
-        frame_size = (640, 480)
-        ovl = pygame.Overlay(pygame.YV12_OVERLAY, frame_size)
-        ovl.set_location(pygame.Rect(0, 0, self.window_width - self.right_width_diff, self.window_height - self.bottom_height_diff))
         try:
             while True:
                 pygame.event.pump()
