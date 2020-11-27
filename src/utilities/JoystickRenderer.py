@@ -29,7 +29,8 @@ class JoystickRenderer:
 
         self.font = pygame.font.SysFont('Roboto', 20)
 
-        self.controller = pygame.joystick.Joystick(0)
+        if pygame.joystick.get_count() > 0:
+            self.controller = pygame.joystick.Joystick(0)
         self.throttle_axis = 5
         self.steering_axis = 0
         self.gear_up_button = 3
@@ -37,7 +38,8 @@ class JoystickRenderer:
         self.manual_control_toggle_button = 1
 
     def init_controllers(self):
-        self.controller.init()
+        if self.controller is not None:
+            self.controller.init()
 
     def pygame_event_loop(self, loop, event_queue):
         while True:
@@ -105,19 +107,19 @@ class JoystickRenderer:
         sent_steering, sent_throttle = None, None
         should_send = False
         should_resend = True
+        steering = 0.0
+        throttle = 0.0
 
         current_time = time.time()
-        frame_size = (640, 480)
-        ovl = pygame.Overlay(pygame.YV12_OVERLAY, frame_size)
-        ovl.set_location(pygame.Rect(0, 0, self.window_width - self.right_width_diff, self.window_height - self.bottom_height_diff))
         try:
             while True:
                 pygame.event.pump()
                 last_time, current_time = current_time, time.time()
                 await asyncio.sleep(1 / self.FPS - (current_time - last_time))  # tick
 
-                steering = self.controller.get_axis(self.steering_axis)
-                throttle = (self.controller.get_axis(self.throttle_axis) + 1.0) / 2.0
+                if self.controller is not None and self.controller.get_numaxes() >= max(self.steering_axis, self.throttle_axis):
+                    steering = self.controller.get_axis(self.steering_axis)
+                    throttle = (self.controller.get_axis(self.throttle_axis) + 1.0) / 2.0
 
                 # should_resend is True until sending car state succeeds, at which point it's set to False.
                 # If we receive new controls, should_send is set to True, otherwise it's False.
