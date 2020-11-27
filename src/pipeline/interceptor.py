@@ -2,6 +2,7 @@ import numpy as np
 from cv2 import flip
 from datetime import datetime
 from zmq.asyncio import Socket
+from PIL import Image
 
 from commons.car_controls import CarControlUpdates, CarControls
 from commons.common_zmq import send_array_with_json
@@ -11,6 +12,9 @@ class Interceptor:
     def __init__(self, config, data_queue: Socket, controls_queue: Socket):
         self.renderer = None
         self.resolution = (config.frame_width, config.frame_height)
+        self.resample = Image.NEAREST
+        if config.exists("frame_scale_linear") and config.frame_scale_linear == True:
+            self.resample = Image.BOX
         self.data_queue = data_queue
         self.controls_queue = controls_queue
 
@@ -33,7 +37,7 @@ class Interceptor:
         # for some forsaken reason it needs to be flipped here.
         try:
             image = frame.to_image()
-            resized_image = image.resize(self.resolution)
+            resized_image = image.resize(self.resolution, self.resample)
             np_array = np.array(resized_image, dtype=np.float32)
             np_array = flip(np_array, 1)
             return np_array
